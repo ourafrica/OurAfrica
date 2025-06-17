@@ -24,10 +24,11 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         <input
           type={type}
           className={cn(
-            "flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:ring-offset-gray-800 dark:placeholder:text-gray-400 dark:focus-visible:ring-primary-500",
+            "flex h-10 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-border-dark dark:bg-surface-dark dark:ring-offset-surface-dark dark:placeholder:text-text-secondary-dark dark:focus-visible:ring-primary-dark",
             leftIcon && "pl-10",
             rightIcon && "pr-10",
-            error && "border-error-500 focus-visible:ring-error-500",
+            error &&
+              "border-error focus-visible:ring-error dark:border-error-dark dark:focus-visible:ring-error-dark",
             className
           )}
           ref={ref}
@@ -42,7 +43,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <p
             className={cn(
               "mt-1 text-xs",
-              error ? "text-error-500" : "text-gray-500"
+              error
+                ? "text-error dark:text-error-dark"
+                : "text-text-secondary dark:text-text-secondary-dark"
             )}
           >
             {helperText}

@@ -40,13 +40,13 @@ const ModuleDetailsPage: React.FC = () => {
     return (
       <div className="p-6 max-w-7xl mx-auto">
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
-          <div className="h-4 bg-gray-200 rounded w-2/3 mb-8"></div>
-          <div className="h-64 bg-gray-200 rounded mb-6"></div>
+          <div className="h-8 bg-surface-dark/50 rounded w-1/3 mb-4"></div>
+          <div className="h-4 bg-surface-dark/50 rounded w-2/3 mb-8"></div>
+          <div className="h-64 bg-surface-dark/50 rounded mb-6"></div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="h-32 bg-gray-200 rounded"></div>
-            <div className="h-32 bg-gray-200 rounded"></div>
-            <div className="h-32 bg-gray-200 rounded"></div>
+            <div className="h-32 bg-surface-dark/50 rounded"></div>
+            <div className="h-32 bg-surface-dark/50 rounded"></div>
+            <div className="h-32 bg-surface-dark/50 rounded"></div>
           </div>
         </div>
       </div>
@@ -59,7 +59,7 @@ const ModuleDetailsPage: React.FC = () => {
         <Card className="text-center p-8">
           <CardContent>
             <h2 className="text-xl font-semibold mb-2">Module Not Found</h2>
-            <p className="text-gray-500 mb-4">
+            <p className="text-text-secondary mb-4">
               The module you're looking for doesn't exist or hasn't been
               downloaded yet.
             </p>
@@ -114,14 +114,18 @@ const ModuleDetailsPage: React.FC = () => {
   return (
     <div className="p-6 max-w-7xl mx-auto animate-fadeIn">
       <header className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">{currentModule.title}</h1>
-        <p className="text-gray-500 dark:text-gray-400">
+        <h1 className="text-3xl font-bold mb-2 text-text dark:text-text-dark">
+          {currentModule.title}
+        </h1>
+        <p className="text-text-secondary dark:text-text-secondary-dark">
           {currentModule.description}
         </p>
       </header>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-8">
-        <h2 className="text-xl font-semibold mb-4">Your Progress</h2>
+      <div className="bg-surface dark:bg-surface-dark rounded-lg shadow-sm p-6 mb-8">
+        <h2 className="text-xl font-semibold mb-4 text-text dark:text-text-dark">
+          Your Progress
+        </h2>
 
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
@@ -137,11 +141,11 @@ const ModuleDetailsPage: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+          <div className="bg-surface/50 dark:bg-surface-dark/50 rounded-lg p-4">
             <div className="flex items-center mb-2">
               <BookOpen
                 size={20}
-                className="mr-2 text-primary-600 dark:text-primary-400"
+                className="mr-2 text-primary dark:text-primary-dark"
               />
               <h3 className="font-semibold">Lessons</h3>
             </div>
@@ -149,16 +153,16 @@ const ModuleDetailsPage: React.FC = () => {
               {progress?.lessonsCompleted || 0}/
               {currentModule.content.lessons.length}
             </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-sm text-text-secondary dark:text-text-secondary-dark">
               lessons completed
             </p>
           </div>
 
-          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+          <div className="bg-surface/50 dark:bg-surface-dark/50 rounded-lg p-4">
             <div className="flex items-center mb-2">
               <Award
                 size={20}
-                className="mr-2 text-accent-600 dark:text-accent-400"
+                className="mr-2 text-accent dark:text-accent-dark"
               />
               <h3 className="font-semibold">Quizzes</h3>
             </div>
@@ -166,23 +170,23 @@ const ModuleDetailsPage: React.FC = () => {
               {progress?.quizzesCompleted || 0}/
               {currentModule.content.quizzes.length}
             </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-sm text-text-secondary dark:text-text-secondary-dark">
               quizzes completed
             </p>
           </div>
 
-          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+          <div className="bg-surface/50 dark:bg-surface-dark/50 rounded-lg p-4">
             <div className="flex items-center mb-2">
               <Clock
                 size={20}
-                className="mr-2 text-secondary-600 dark:text-secondary-400"
+                className="mr-2 text-secondary dark:text-secondary-dark"
               />
               <h3 className="font-semibold">Time Spent</h3>
             </div>
             <p className="text-2xl font-bold">
               {formatTime(progress?.totalTimeSpent || 0)}
             </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-sm text-text-secondary dark:text-text-secondary-dark">
               learning time
             </p>
           </div>
@@ -191,17 +195,17 @@ const ModuleDetailsPage: React.FC = () => {
 
       {/* Certificate Section */}
       {moduleCompleted && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-8">
-          <div className="flex items-center justify-between">
-            <div>
+        <div className="bg-surface dark:bg-surface-dark rounded-lg shadow-sm p-4 sm:p-6 mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex-1">
               <h2 className="text-xl font-semibold mb-2 flex items-center">
                 <Award
                   size={24}
-                  className="mr-2 text-success-600 dark:text-success-400"
+                  className="mr-2 text-success dark:text-success-dark"
                 />
                 Certificate of Completion
               </h2>
-              <p className="text-gray-600 dark:text-gray-300">
+              <p className="text-text-secondary dark:text-text-secondary-dark">
                 Congratulations! You have completed this module. Download your
                 certificate to showcase your achievement.
               </p>
@@ -211,6 +215,7 @@ const ModuleDetailsPage: React.FC = () => {
               isLoading={isGeneratingCertificate}
               leftIcon={<Download size={16} />}
               variant="secondary"
+              className="w-full sm:w-auto"
             >
               {isGeneratingCertificate
                 ? "Generating..."
@@ -221,19 +226,21 @@ const ModuleDetailsPage: React.FC = () => {
       )}
 
       <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">Module Content</h2>
+        <h2 className="text-xl font-semibold mb-4 text-text dark:text-text-dark">
+          Module Content
+        </h2>
 
         <Card>
           <CardHeader>
             <CardTitle>Lessons</CardTitle>
           </CardHeader>
           <CardContent>
-            <ul className="divide-y">
+            <ul className="divide-y divide-border dark:divide-border-dark">
               {currentModule.content.lessons.map((lesson, index) => (
                 <li key={lesson.id} className="py-3">
                   <div className="flex justify-between items-center">
                     <div>
-                      <span className="text-gray-500 text-sm mr-2">
+                      <span className="text-text-secondary text-sm mr-2">
                         {index + 1}.
                       </span>
                       <span className="font-medium">{lesson.title}</span>
@@ -267,7 +274,7 @@ const ModuleDetailsPage: React.FC = () => {
             <CardTitle>Quizzes</CardTitle>
           </CardHeader>
           <CardContent>
-            <ul className="divide-y">
+            <ul className="divide-y divide-border dark:divide-border-dark">
               {currentModule.content.quizzes.map((quiz, index) => {
                 // Find the lesson that must be completed before this quiz
                 const requiredLesson = currentModule.content.lessons.find(
@@ -289,12 +296,12 @@ const ModuleDetailsPage: React.FC = () => {
                   <li key={quiz.id} className="py-3">
                     <div className="flex justify-between items-center">
                       <div>
-                        <span className="text-gray-500 text-sm mr-2">
+                        <span className="text-text-secondary text-sm mr-2">
                           {index + 1}.
                         </span>
                         <span className="font-medium">{quiz.title}</span>
                         {!isUnlocked && (
-                          <span className="ml-2 text-sm text-gray-500">
+                          <span className="ml-2 text-sm text-text-secondary">
                             (Complete lesson {requiredLessonIndex + 1} to
                             unlock)
                           </span>

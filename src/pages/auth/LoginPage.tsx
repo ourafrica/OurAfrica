@@ -43,7 +43,7 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background dark:bg-background-dark flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <Card className="w-full animate-fadeIn">
           <CardHeader className="space-y-1">
@@ -56,7 +56,7 @@ const LoginPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             {error && (
-              <div className="mb-4 p-3 bg-error-50 text-error-700 rounded-md text-sm">
+              <div className="mb-4 p-3 bg-error/10 text-error rounded-md text-sm dark:bg-error-dark/20 dark:text-error-dark">
                 {error}
               </div>
             )}
@@ -69,7 +69,7 @@ const LoginPage: React.FC = () => {
                   id="email"
                   type="email"
                   placeholder="name@example.com"
-                  leftIcon={<Mail size={18} className="text-gray-500" />}
+                  leftIcon={<Mail size={18} className="text-text-secondary" />}
                   error={!!errors.email}
                   helperText={errors.email?.message}
                   {...register("email")}
@@ -85,7 +85,7 @@ const LoginPage: React.FC = () => {
                   id="password"
                   type="password"
                   placeholder="••••••••"
-                  leftIcon={<Lock size={18} className="text-gray-500" />}
+                  leftIcon={<Lock size={18} className="text-text-secondary" />}
                   error={!!errors.password}
                   helperText={errors.password?.message}
                   {...register("password")}
@@ -102,11 +102,11 @@ const LoginPage: React.FC = () => {
             </form>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
-            <div className="text-sm text-center text-gray-500">
+            <div className="text-sm text-center text-text-secondary">
               Don't have an account?{" "}
               <a
                 onClick={() => navigate({ to: "/auth/register" })}
-                className="text-primary-600 hover:underline cursor-pointer"
+                className="text-primary hover:underline cursor-pointer dark:text-primary-dark"
               >
                 Sign up
               </a>

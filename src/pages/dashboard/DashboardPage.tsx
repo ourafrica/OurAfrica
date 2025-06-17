@@ -37,10 +37,10 @@ const DashboardPage: React.FC = () => {
   return (
     <div className="p-6 max-w-7xl mx-auto animate-fadeIn">
       <header className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">
+        <h1 className="text-3xl font-bold mb-2 text-text dark:text-text-dark">
           Welcome back, {user.username}!
         </h1>
-        <p className="text-gray-500 dark:text-gray-400">
+        <p className="text-text-secondary dark:text-text-secondary-dark">
           Continue your learning journey right where you left off.
         </p>
       </header>
@@ -50,13 +50,13 @@ const DashboardPage: React.FC = () => {
           <CardContent className="p-6">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                <p className="text-sm font-medium text-text-secondary dark:text-text-secondary-dark">
                   Enrolled Modules
                 </p>
                 <h3 className="text-2xl font-bold mt-1">{modules.length}</h3>
               </div>
-              <div className="p-2 bg-primary-100 rounded-full dark:bg-primary-900">
-                <BookOpen className="h-6 w-6 text-primary-600 dark:text-primary-400" />
+              <div className="p-2 bg-primary/10 rounded-full dark:bg-primary-dark/20">
+                <BookOpen className="h-6 w-6 text-primary dark:text-primary-dark" />
               </div>
             </div>
           </CardContent>
@@ -66,7 +66,7 @@ const DashboardPage: React.FC = () => {
           <CardContent className="p-6">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                <p className="text-sm font-medium text-text-secondary dark:text-text-secondary-dark">
                   Total Learning Time
                 </p>
                 <h3 className="text-2xl font-bold mt-1">
@@ -85,8 +85,8 @@ const DashboardPage: React.FC = () => {
                   )}
                 </h3>
               </div>
-              <div className="p-2 bg-secondary-100 rounded-full dark:bg-secondary-900">
-                <Clock className="h-6 w-6 text-secondary-600 dark:text-secondary-400" />
+              <div className="p-2 bg-secondary/10 rounded-full dark:bg-secondary-dark/20">
+                <Clock className="h-6 w-6 text-secondary dark:text-secondary-dark" />
               </div>
             </div>
           </CardContent>
@@ -96,15 +96,15 @@ const DashboardPage: React.FC = () => {
           <CardContent className="p-6">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                <p className="text-sm font-medium text-text-secondary dark:text-text-secondary-dark">
                   Certificates Earned
                 </p>
                 <h3 className="text-2xl font-bold mt-1">
                   {user ? getCertificateCount(user.id) : 0}
                 </h3>
               </div>
-              <div className="p-2 bg-accent-100 rounded-full dark:bg-accent-900">
-                <Award className="h-6 w-6 text-accent-600 dark:text-accent-400" />
+              <div className="p-2 bg-accent/10 rounded-full dark:bg-accent-dark/20">
+                <Award className="h-6 w-6 text-accent dark:text-accent-dark" />
               </div>
             </div>
           </CardContent>
@@ -114,29 +114,31 @@ const DashboardPage: React.FC = () => {
           <CardContent className="p-6">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                <p className="text-sm font-medium text-text-secondary dark:text-text-secondary-dark">
                   Joined On
                 </p>
                 <h3 className="text-lg font-bold mt-1">
                   {formatDate(new Date(user.created_at))}
                 </h3>
               </div>
-              <div className="p-2 bg-warning-100 rounded-full dark:bg-warning-900">
-                <Calendar className="h-6 w-6 text-warning-600 dark:text-warning-400" />
+              <div className="p-2 bg-warning/10 rounded-full dark:bg-warning-dark/20">
+                <Calendar className="h-6 w-6 text-warning dark:text-warning-dark" />
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <h2 className="text-2xl font-bold mb-4">Your Modules</h2>
+      <h2 className="text-2xl font-bold mb-4 text-text dark:text-text-dark">
+        Your Modules
+      </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
         {modules.length === 0 ? (
           <Card className="md:col-span-2 xl:col-span-3">
             <CardContent className="p-8 text-center">
               <h3 className="text-xl font-semibold mb-2">No modules yet</h3>
-              <p className="text-gray-500 mb-4">
+              <p className="text-text-secondary dark:text-text-secondary-dark mb-4">
                 You haven't downloaded any modules yet. Get started by
                 downloading your first module.
               </p>
@@ -187,7 +189,7 @@ const DashboardPage: React.FC = () => {
                       />
                     </div>
 
-                    <div className="flex items-center text-sm text-gray-500">
+                    <div className="flex items-center text-sm text-text-secondary dark:text-text-secondary-dark">
                       <Clock size={16} className="mr-1" />
                       <span>
                         {formatTime(module.content.estimatedTime)} estimated

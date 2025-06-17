@@ -40,11 +40,11 @@ const Modal: React.FC<ModalProps> = ({
       onClick={handleBackdropClick}
     >
       <div
-        className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full ${sizeClasses[size]} max-h-[90vh] overflow-hidden`}
+        className={`bg-surface dark:bg-surface-dark rounded-lg shadow-xl w-full ${sizeClasses[size]} max-h-[90vh] overflow-hidden`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+        <div className="flex items-center justify-between p-6 border-b border-border dark:border-border-dark">
+          <h2 className="text-xl font-semibold text-text dark:text-text-dark">
             {title}
           </h2>
           {showCloseButton && (
@@ -52,7 +52,7 @@ const Modal: React.FC<ModalProps> = ({
               variant="ghost"
               size="sm"
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="p-2 hover:bg-surface/50 dark:hover:bg-surface-dark/50"
             >
               <X size={20} />
             </Button>

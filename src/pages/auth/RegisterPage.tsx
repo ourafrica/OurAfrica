@@ -56,7 +56,7 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background dark:bg-background-dark flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <Card className="w-full animate-fadeIn">
           <CardHeader className="space-y-1">
@@ -69,7 +69,7 @@ const RegisterPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             {error && (
-              <div className="mb-4 p-3 bg-error-50 text-error-700 rounded-md text-sm">
+              <div className="mb-4 p-3 bg-error/10 text-error rounded-md text-sm dark:bg-error-dark/20 dark:text-error-dark">
                 {error}
               </div>
             )}
@@ -81,7 +81,7 @@ const RegisterPage: React.FC = () => {
                 <Input
                   id="username"
                   placeholder="johndoe"
-                  leftIcon={<User size={18} className="text-gray-500" />}
+                  leftIcon={<User size={18} className="text-text-secondary" />}
                   error={!!errors.username}
                   helperText={errors.username?.message}
                   {...register("username")}
@@ -95,7 +95,7 @@ const RegisterPage: React.FC = () => {
                   id="email"
                   type="email"
                   placeholder="name@example.com"
-                  leftIcon={<Mail size={18} className="text-gray-500" />}
+                  leftIcon={<Mail size={18} className="text-text-secondary" />}
                   error={!!errors.email}
                   helperText={errors.email?.message}
                   {...register("email")}
@@ -109,7 +109,7 @@ const RegisterPage: React.FC = () => {
                   id="password"
                   type="password"
                   placeholder="••••••••"
-                  leftIcon={<Lock size={18} className="text-gray-500" />}
+                  leftIcon={<Lock size={18} className="text-text-secondary" />}
                   error={!!errors.password}
                   helperText={errors.password?.message}
                   {...register("password")}
@@ -126,7 +126,7 @@ const RegisterPage: React.FC = () => {
                   id="confirmPassword"
                   type="password"
                   placeholder="••••••••"
-                  leftIcon={<Lock size={18} className="text-gray-500" />}
+                  leftIcon={<Lock size={18} className="text-text-secondary" />}
                   error={!!errors.confirmPassword}
                   helperText={errors.confirmPassword?.message}
                   {...register("confirmPassword")}
@@ -143,11 +143,11 @@ const RegisterPage: React.FC = () => {
             </form>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
-            <div className="text-sm text-center text-gray-500">
+            <div className="text-sm text-center text-text-secondary">
               Already have an account?{" "}
               <a
                 onClick={() => navigate({ to: "/auth/login" })}
-                className="text-primary-600 hover:underline cursor-pointer"
+                className="text-primary hover:underline cursor-pointer dark:text-primary-dark"
               >
                 Sign in
               </a>

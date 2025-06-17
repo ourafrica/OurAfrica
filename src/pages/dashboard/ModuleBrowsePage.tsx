@@ -46,8 +46,10 @@ const ModuleBrowsePage: React.FC = () => {
     <div className="p-6 max-w-7xl mx-auto animate-fadeIn">
       <header className="mb-8 flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Browse Modules</h1>
-          <p className="text-gray-500 dark:text-gray-400">
+          <h1 className="text-3xl font-bold mb-2 text-text dark:text-text-dark">
+            Browse Modules
+          </h1>
+          <p className="text-text-secondary dark:text-text-secondary-dark">
             Discover and download new learning modules to expand your knowledge.
           </p>
         </div>
@@ -83,7 +85,7 @@ const ModuleBrowsePage: React.FC = () => {
                   {module.title}
                   {isDownloaded && (
                     <CheckCircle
-                      className="inline-block ml-2 text-success-500\"
+                      className="inline-block ml-2 text-success dark:text-success-dark"
                       size={16}
                     />
                   )}
@@ -94,7 +96,7 @@ const ModuleBrowsePage: React.FC = () => {
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-4">
-                  <div className="flex items-center text-sm text-gray-500">
+                  <div className="flex items-center text-sm text-text-secondary">
                     <Clock size={16} className="mr-1" />
                     <span>
                       {formatTime(module.content?.estimatedTime || 0)} estimated
@@ -102,8 +104,11 @@ const ModuleBrowsePage: React.FC = () => {
                   </div>
 
                   <div className="flex items-start space-x-2 text-sm">
-                    <Info size={16} className="text-gray-500 mt-0.5 shrink-0" />
-                    <p className="text-gray-500">
+                    <Info
+                      size={16}
+                      className="text-text-secondary mt-0.5 shrink-0"
+                    />
+                    <p className="text-text-secondary">
                       This module includes{" "}
                       {module.content?.lessons?.length || 0} lessons and{" "}
                       {module.content?.quizzes?.length || 0} quizzes.

@@ -140,9 +140,9 @@ const LessonPage: React.FC = () => {
     return (
       <div className="p-6 max-w-4xl mx-auto">
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
-          <div className="h-4 bg-gray-200 rounded w-2/3 mb-8"></div>
-          <div className="h-64 bg-gray-200 rounded mb-6"></div>
+          <div className="h-8 bg-surface-dark/50 rounded w-1/3 mb-4"></div>
+          <div className="h-4 bg-surface-dark/50 rounded w-2/3 mb-8"></div>
+          <div className="h-64 bg-surface-dark/50 rounded mb-6"></div>
         </div>
       </div>
     );
@@ -153,9 +153,9 @@ const LessonPage: React.FC = () => {
   if (!lesson) {
     return (
       <div className="p-6 max-w-4xl mx-auto">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 text-center">
+        <div className="bg-surface dark:bg-surface-dark rounded-lg shadow-sm p-6 text-center">
           <h2 className="text-xl font-semibold mb-2">Lesson Not Found</h2>
-          <p className="text-gray-500 mb-4">
+          <p className="text-text-secondary mb-4">
             The lesson you're looking for doesn't exist.
           </p>
           <Button onClick={() => navigate({ to: `/modules/${moduleId}` })}>
@@ -189,30 +189,32 @@ const LessonPage: React.FC = () => {
       .afterLessonId === lessonId;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-16">
+    <div className="min-h-screen bg-background dark:bg-background-dark pb-16">
       {/* Top navigation bar */}
-      <header className="sticky top-0 bg-white dark:bg-gray-800 shadow-sm z-10">
+      <header className="sticky top-0 bg-surface dark:bg-surface-dark shadow-sm z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-3">
             <div className="flex items-center justify-between">
               <button
                 onClick={() => navigate({ to: `/modules/${moduleId}` })}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                className="text-text-secondary hover:text-text dark:text-text-secondary-dark dark:hover:text-text-dark"
               >
                 <ChevronLeft size={20} />
                 <span className="sr-only">Back to Module</span>
               </button>
 
               <div className="text-center">
-                <h1 className="text-sm font-medium">{currentModule.title}</h1>
-                <p className="text-xs text-gray-500">
+                <h1 className="text-sm font-medium text-text dark:text-text-dark">
+                  {currentModule.title}
+                </h1>
+                <p className="text-xs text-text-secondary dark:text-text-secondary-dark">
                   Lesson {currentIndex + 1} of {totalLessons}
                 </p>
               </div>
 
               <button
                 onClick={() => {}}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                className="text-text-secondary hover:text-text dark:text-text-secondary-dark dark:hover:text-text-dark"
               >
                 <MoreHorizontal size={20} />
                 <span className="sr-only">More Options</span>
@@ -228,11 +230,13 @@ const LessonPage: React.FC = () => {
 
       {/* Lesson content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
+        <div className="bg-surface dark:bg-surface-dark rounded-lg shadow-sm overflow-hidden">
           <div className="p-6">
-            <h2 className="text-2xl font-bold mb-6">{lesson.title}</h2>
+            <h2 className="text-2xl font-bold mb-6 text-text dark:text-text-dark">
+              {lesson.title}
+            </h2>
 
-            <div className="prose dark:prose-invert max-w-none">
+            <div className="prose dark:prose-invert max-w-none text-text dark:text-text-dark">
               {lesson.content.map((item, index) => (
                 <LessonContentRenderer key={index} content={item} />
               ))}
@@ -310,7 +314,7 @@ const LessonContentRenderer: React.FC<LessonContentRendererProps> = ({
             className="w-full h-auto rounded-lg"
           />
           {content.alt && (
-            <p className="text-sm text-gray-500 mt-2 text-center">
+            <p className="text-sm text-text-secondary mt-2 text-center">
               {content.alt}
             </p>
           )}
@@ -330,7 +334,7 @@ const LessonContentRenderer: React.FC<LessonContentRendererProps> = ({
             ></iframe>
           </div>
           {content.title && (
-            <p className="text-sm text-gray-500 mt-2 text-center">
+            <p className="text-sm text-text-secondary mt-2 text-center">
               {content.title}
             </p>
           )}
@@ -340,8 +344,8 @@ const LessonContentRenderer: React.FC<LessonContentRendererProps> = ({
     case "code":
       return (
         <div className="mb-6">
-          <div className="bg-gray-800 rounded-lg overflow-hidden">
-            <pre className="p-4 text-gray-100 overflow-x-auto">
+          <div className="bg-surface-dark rounded-lg overflow-hidden">
+            <pre className="p-4 text-text-dark overflow-x-auto">
               <code>{content.content}</code>
             </pre>
           </div>

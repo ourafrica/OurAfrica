@@ -1,5 +1,22 @@
 import { jsPDF } from "jspdf";
 import { Module, User } from "../types";
+// Function to draw BookOpen icon using jsPDF commands
+function drawBookOpenIcon(doc: jsPDF, x: number, y: number, size: number) {
+  doc.setFillColor(79, 42, 106); // Primary color #4F2A6A
+  // Book cover (simplified rectangle)
+  doc.rect(x, y, size * 1.5, size * 1.2, "F");
+  // Book pages (simplified lines)
+  doc.setDrawColor(79, 42, 106);
+  doc.setLineWidth(0.5);
+  for (let i = 0; i < 5; i++) {
+    doc.line(
+      x + size * 0.2,
+      y + size * 0.2 + i * size * 0.2,
+      x + size * 1.3,
+      y + size * 0.2 + i * size * 0.2
+    );
+  }
+}
 
 export const generateCertificate = (user: User, module: Module): string => {
   const doc = new jsPDF({
@@ -13,18 +30,18 @@ export const generateCertificate = (user: User, module: Module): string => {
   doc.rect(0, 0, 297, 210, "F");
 
   // Add border
-  doc.setDrawColor(0, 87, 183); // Primary blue
+  doc.setDrawColor(79, 42, 106); // Primary color #4F2A6A
   doc.setLineWidth(1);
   doc.rect(10, 10, 277, 190);
 
   // Add header
   doc.setFontSize(30);
-  doc.setTextColor(0, 87, 183);
+  doc.setTextColor(79, 42, 106); // Primary color #4F2A6A
   doc.setFont("helvetica", "bold");
   doc.text("Certificate of Completion", 297 / 2, 40, { align: "center" });
 
   // Add decoration line
-  doc.setDrawColor(0, 87, 183);
+  doc.setDrawColor(249, 168, 38); // Secondary color #F9A826
   doc.setLineWidth(1);
   doc.line(70, 50, 227, 50);
 
@@ -74,9 +91,12 @@ export const generateCertificate = (user: User, module: Module): string => {
     align: "center",
   });
 
+  // Add BookOpen icon
+  drawBookOpenIcon(doc, 297 / 2 - 12, 160, 10);
+
   // Add platform name
   doc.setFontSize(12);
-  doc.setTextColor(0, 87, 183);
+  doc.setTextColor(79, 42, 106); // Primary color #4F2A6A
   doc.setFont("helvetica", "bold");
   doc.text("Our Africa", 297 / 2, 180, { align: "center" });
 

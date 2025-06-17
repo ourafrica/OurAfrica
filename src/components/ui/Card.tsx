@@ -1,14 +1,14 @@
-import React from 'react';
-import { cn } from '../../lib/utils';
+import React from "react";
+import { cn } from "../../lib/utils";
 
-interface CardProps extends React.HTMLAttributes<HTMLDivElement> {}
+type CardProps = React.HTMLAttributes<HTMLDivElement>;
 
 const Card = React.forwardRef<HTMLDivElement, CardProps>(
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
       className={cn(
-        "rounded-lg border bg-white shadow-sm dark:bg-gray-800 dark:border-gray-700",
+        "rounded-lg border border-border bg-surface text-text shadow-sm dark:bg-surface-dark dark:border-border-dark dark:text-text-dark",
         className
       )}
       {...props}
@@ -17,7 +17,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
 );
 Card.displayName = "Card";
 
-interface CardHeaderProps extends React.HTMLAttributes<HTMLDivElement> {}
+type CardHeaderProps = React.HTMLAttributes<HTMLDivElement>;
 
 const CardHeader = React.forwardRef<HTMLDivElement, CardHeaderProps>(
   ({ className, ...props }, ref) => (
@@ -30,7 +30,7 @@ const CardHeader = React.forwardRef<HTMLDivElement, CardHeaderProps>(
 );
 CardHeader.displayName = "CardHeader";
 
-interface CardTitleProps extends React.HTMLAttributes<HTMLHeadingElement> {}
+type CardTitleProps = React.HTMLAttributes<HTMLHeadingElement>;
 
 const CardTitle = React.forwardRef<HTMLParagraphElement, CardTitleProps>(
   ({ className, ...props }, ref) => (
@@ -46,20 +46,24 @@ const CardTitle = React.forwardRef<HTMLParagraphElement, CardTitleProps>(
 );
 CardTitle.displayName = "CardTitle";
 
-interface CardDescriptionProps extends React.HTMLAttributes<HTMLParagraphElement> {}
+type CardDescriptionProps = React.HTMLAttributes<HTMLParagraphElement>;
 
-const CardDescription = React.forwardRef<HTMLParagraphElement, CardDescriptionProps>(
-  ({ className, ...props }, ref) => (
-    <p
-      ref={ref}
-      className={cn("text-sm text-gray-500 dark:text-gray-400", className)}
-      {...props}
-    />
-  )
-);
+const CardDescription = React.forwardRef<
+  HTMLParagraphElement,
+  CardDescriptionProps
+>(({ className, ...props }, ref) => (
+  <p
+    ref={ref}
+    className={cn(
+      "text-sm text-text-secondary dark:text-text-secondary-dark",
+      className
+    )}
+    {...props}
+  />
+));
 CardDescription.displayName = "CardDescription";
 
-interface CardContentProps extends React.HTMLAttributes<HTMLDivElement> {}
+type CardContentProps = React.HTMLAttributes<HTMLDivElement>;
 
 const CardContent = React.forwardRef<HTMLDivElement, CardContentProps>(
   ({ className, ...props }, ref) => (
@@ -68,7 +72,7 @@ const CardContent = React.forwardRef<HTMLDivElement, CardContentProps>(
 );
 CardContent.displayName = "CardContent";
 
-interface CardFooterProps extends React.HTMLAttributes<HTMLDivElement> {}
+type CardFooterProps = React.HTMLAttributes<HTMLDivElement>;
 
 const CardFooter = React.forwardRef<HTMLDivElement, CardFooterProps>(
   ({ className, ...props }, ref) => (

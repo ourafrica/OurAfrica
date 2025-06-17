@@ -3,14 +3,14 @@ import { useNavigate } from "@tanstack/react-router";
 import { BookOpen, User, LogOut } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import Button from "../ui/Button";
-import ThemeToggle from "../ui/ThemeToggle";
+// import ThemeToggle from "../ui/ThemeToggle";
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
   return (
-    <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+    <header className="bg-surface dark:bg-surface-dark shadow-sm border-b border-border dark:border-border-dark">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
@@ -18,8 +18,8 @@ const Header: React.FC = () => {
               className="flex-shrink-0 flex items-center cursor-pointer"
               onClick={() => navigate({ to: "/" })}
             >
-              <BookOpen className="h-8 w-8 text-primary-600 dark:text-primary-500" />
-              <span className="ml-2 text-xl font-bold text-gray-900 dark:text-white">
+              <BookOpen className="h-8 w-8 text-primary dark:text-primary-dark" />
+              <span className="ml-2 text-xl font-bold text-text dark:text-text-dark">
                 Our Africa
               </span>
             </div>
@@ -32,7 +32,7 @@ const Header: React.FC = () => {
                     e.preventDefault();
                     navigate({ to: "/" });
                   }}
-                  className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 dark:text-white border-b-2 border-transparent hover:border-primary-500"
+                  className="inline-flex items-center px-1 pt-1 text-sm font-medium text-text dark:text-text-dark border-b-2 border-transparent hover:border-primary-dark"
                 >
                   Dashboard
                 </a>
@@ -42,7 +42,7 @@ const Header: React.FC = () => {
                     e.preventDefault();
                     navigate({ to: "/modules/browse" });
                   }}
-                  className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 dark:text-gray-300 border-b-2 border-transparent hover:border-primary-500 hover:text-gray-700 dark:hover:text-white"
+                  className="inline-flex items-center px-1 pt-1 text-sm font-medium text-text-secondary dark:text-text-secondary-dark border-b-2 border-transparent hover:border-primary-dark"
                 >
                   Browse Modules
                 </a>
@@ -51,15 +51,15 @@ const Header: React.FC = () => {
           </div>
 
           <div className="flex items-center space-x-4">
-            <ThemeToggle />
+            {/* <ThemeToggle /> */}
 
             {user ? (
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
-                  <div className="h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center">
-                    <User className="h-4 w-4 text-primary-600 dark:text-primary-400" />
+                  <div className="h-8 w-8 rounded-full bg-primary/10 dark:bg-primary-dark/20 flex items-center justify-center">
+                    <User className="h-4 w-4 text-primary dark:text-primary-dark" />
                   </div>
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 hidden md:inline-block">
+                  <span className="text-sm font-medium text-text-secondary dark:text-text-secondary-dark hidden md:inline-block">
                     {user.username}
                   </span>
                 </div>

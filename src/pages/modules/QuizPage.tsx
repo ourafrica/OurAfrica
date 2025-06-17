@@ -46,9 +46,9 @@ const QuizPage: React.FC = () => {
     return (
       <div className="p-6 max-w-4xl mx-auto">
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
-          <div className="h-4 bg-gray-200 rounded w-2/3 mb-8"></div>
-          <div className="h-64 bg-gray-200 rounded mb-6"></div>
+          <div className="h-8 bg-surface-dark/50 rounded w-1/3 mb-4"></div>
+          <div className="h-4 bg-surface-dark/50 rounded w-2/3 mb-8"></div>
+          <div className="h-64 bg-surface-dark/50 rounded mb-6"></div>
         </div>
       </div>
     );
@@ -59,9 +59,9 @@ const QuizPage: React.FC = () => {
   if (!quiz) {
     return (
       <div className="p-6 max-w-4xl mx-auto">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 text-center">
+        <div className="bg-surface dark:bg-surface-dark rounded-lg shadow-sm p-6 text-center">
           <h2 className="text-xl font-semibold mb-2">Quiz Not Found</h2>
-          <p className="text-gray-500 mb-4">
+          <p className="text-text-secondary mb-4">
             The quiz you're looking for doesn't exist.
           </p>
           <Button onClick={() => navigate({ to: `/modules/${moduleId}` })}>
@@ -210,17 +210,20 @@ const QuizPage: React.FC = () => {
     };
 
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background dark:bg-background-dark flex items-center justify-center p-4">
         <Card className="w-full max-w-md animate-fadeIn">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl mb-2">Quiz Results</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6 text-center">
-            <div className="mx-auto w-24 h-24 rounded-full flex items-center justify-center bg-gray-100 dark:bg-gray-700">
+            <div className="mx-auto w-24 h-24 rounded-full flex items-center justify-center bg-surface/50 dark:bg-surface-dark/50">
               {isPassed ? (
-                <Award size={48} className="text-success-500" />
+                <Award
+                  size={48}
+                  className="text-success dark:text-success-dark"
+                />
               ) : (
-                <X size={48} className="text-error-500" />
+                <X size={48} className="text-error dark:text-error-dark" />
               )}
             </div>
 
@@ -228,7 +231,7 @@ const QuizPage: React.FC = () => {
               <h3 className="text-xl font-bold">
                 {isPassed ? "Congratulations!" : "Almost there!"}
               </h3>
-              <p className="text-gray-500 mt-1">
+              <p className="text-text-secondary mt-1">
                 {isPassed
                   ? moduleCompleted
                     ? "You have completed the entire module! Your certificate is ready."
@@ -237,20 +240,28 @@ const QuizPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+            <div className="bg-surface/50 dark:bg-surface-dark/50 p-4 rounded-lg">
               <div className="flex justify-between mb-2">
-                <span>Your Score</span>
+                <span className="text-text dark:text-text-dark">
+                  Your Score
+                </span>
                 <span
                   className={`font-bold ${
-                    isPassed ? "text-success-500" : "text-error-500"
+                    isPassed
+                      ? "text-success dark:text-success-dark"
+                      : "text-error dark:text-error-dark"
                   }`}
                 >
                   {score}%
                 </span>
               </div>
               <div className="flex justify-between">
-                <span>Passing Score</span>
-                <span>{quiz.passingScore}%</span>
+                <span className="text-text dark:text-text-dark">
+                  Passing Score
+                </span>
+                <span className="text-text dark:text-text-dark">
+                  {quiz.passingScore}%
+                </span>
               </div>
             </div>
           </CardContent>
@@ -299,22 +310,24 @@ const QuizPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-16">
+    <div className="min-h-screen bg-background dark:bg-background-dark pb-16">
       {/* Top navigation bar */}
-      <header className="sticky top-0 bg-white dark:bg-gray-800 shadow-sm z-10">
+      <header className="sticky top-0 bg-surface dark:bg-surface-dark shadow-sm z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-3">
             <div className="flex items-center justify-between">
               <button
                 onClick={() => navigate({ to: `/modules/${moduleId}` })}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                className="text-text-secondary hover:text-text dark:text-text-secondary-dark dark:hover:text-text-dark"
               >
                 <ChevronLeft size={20} />
                 <span className="sr-only">Back to Module</span>
               </button>
               <div className="text-center">
-                <h1 className="text-sm font-medium">{quiz.title}</h1>
-                <p className="text-xs text-gray-500">
+                <h1 className="text-sm font-medium text-text dark:text-text-dark">
+                  {quiz.title}
+                </h1>
+                <p className="text-xs text-text-secondary dark:text-text-secondary-dark">
                   Question {currentQuestionIndex + 1} of {quiz.questions.length}
                 </p>
               </div>
@@ -330,8 +343,8 @@ const QuizPage: React.FC = () => {
 
       {/* Quiz content */}
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden p-6">
-          <h2 className="text-xl font-bold mb-6">
+        <div className="bg-surface dark:bg-surface-dark rounded-lg shadow-sm overflow-hidden p-6">
+          <h2 className="text-xl font-bold mb-6 text-text dark:text-text-dark">
             {currentQuestionIndex + 1}. {currentQuestion.question}
           </h2>
 
@@ -343,8 +356,8 @@ const QuizPage: React.FC = () => {
                   p-4 rounded-lg border-2 cursor-pointer transition-all
                   ${
                     answers[currentQuestionIndex] === index
-                      ? "border-primary-500 bg-primary-50 dark:bg-primary-900/20"
-                      : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                      ? "border-primary dark:border-primary-dark bg-primary/10 dark:bg-primary-dark/20"
+                      : "border-border dark:border-border-dark hover:border-primary/50 dark:hover:border-primary-dark/50"
                   }
                 `}
                 onClick={() => handleAnswerSelect(currentQuestionIndex, index)}
@@ -355,8 +368,8 @@ const QuizPage: React.FC = () => {
                     w-5 h-5 rounded-full mr-3 flex items-center justify-center
                     ${
                       answers[currentQuestionIndex] === index
-                        ? "bg-primary-500 text-white"
-                        : "bg-gray-200 dark:bg-gray-700"
+                        ? "bg-primary dark:bg-primary-dark text-white"
+                        : "bg-surface/50 dark:bg-surface-dark/50"
                     }
                   `}
                   >
@@ -364,7 +377,9 @@ const QuizPage: React.FC = () => {
                       <Check size={12} />
                     )}
                   </div>
-                  <span>{option}</span>
+                  <span className="text-text dark:text-text-dark">
+                    {option}
+                  </span>
                 </div>
               </div>
             ))}
