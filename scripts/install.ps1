@@ -30,7 +30,19 @@ if ($executionPolicy -eq "Restricted") {
     }
     catch {
         Write-Error "Failed to update execution policy. Please run PowerShell as Administrator and try again."
+        Read-Host "Press Enter to exit"
         exit 1
+    }
+}
+
+# Function to refresh environment variables
+function Refresh-Environment {
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
+    
+    # Also refresh other common environment variables
+    $env:NODE_PATH = [System.Environment]::GetEnvironmentVariable("NODE_PATH", "Machine")
+    if (-not $env:NODE_PATH) {
+        $env:NODE_PATH = [System.Environment]::GetEnvironmentVariable("NODE_PATH", "User")
     }
 }
 
@@ -43,23 +55,42 @@ function Install-NodeJS {
     $installerPath = "$env:TEMP\nodejs-installer.msi"
     
     try {
-        # Download Node.js installer
-        $webClient = New-Object System.Net.WebClient
-        $webClient.DownloadFile($nodeUrl, $installerPath)
+        # Download Node.js installer with better error handling
+        Write-Info "Downloading from: $nodeUrl"
+        $progressPreference = 'SilentlyContinue'
+        Invoke-WebRequest -Uri $nodeUrl -OutFile $installerPath -UseBasicParsing
         Write-Success "Node.js installer downloaded successfully."
         
         # Install Node.js silently
         Write-Info "Installing Node.js... (this may take a few minutes)"
-        $installProcess = Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$installerPath`" /quiet /norestart" -Wait -PassThru
+        Write-Warning "Please wait, do not close this window..."
+        
+        $installArgs = @(
+            "/i", "`"$installerPath`"",
+            "/quiet",
+            "/norestart",
+            "ADDLOCAL=ALL"
+        )
+        
+        $installProcess = Start-Process -FilePath "msiexec.exe" -ArgumentList $installArgs -Wait -PassThru -NoNewWindow
         
         if ($installProcess.ExitCode -eq 0) {
             Write-Success "Node.js installed successfully."
             
-            # Refresh environment variables
-            $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-            
             # Clean up installer
-            Remove-Item $installerPath -Force -ErrorAction SilentlyContinue
+            try {
+                Remove-Item $installerPath -Force -ErrorAction SilentlyContinue
+            } catch {
+                # Ignore cleanup errors
+            }
+            
+            # Force refresh environment
+            Refresh-Environment
+            
+            # Wait for system to register the installation
+            Write-Info "Waiting for system to register Node.js installation..."
+            Start-Sleep -Seconds 5
+            
             return $true
         }
         else {
@@ -69,28 +100,78 @@ function Install-NodeJS {
     }
     catch {
         Write-Error "Failed to download or install Node.js: $($_.Exception.Message)"
+        Write-Info "You may need to:"
+        Write-Info "1. Check your internet connection"
+        Write-Info "2. Run PowerShell as Administrator"
+        Write-Info "3. Manually download Node.js from https://nodejs.org/"
         return $false
     }
+}
+
+# Function to test Node.js installation
+function Test-NodeJS {
+    param([int]$MaxRetries = 10)
+    
+    $retryCount = 0
+    while ($retryCount -lt $MaxRetries) {
+        try {
+            # Refresh environment variables
+            Refresh-Environment
+            
+            # Test if node command exists
+            $nodeCommand = Get-Command node -ErrorAction SilentlyContinue
+            if ($nodeCommand) {
+                # Test if node actually runs
+                $nodeVersionOutput = & node -v 2>&1
+                if ($nodeVersionOutput -match "v\d+\.\d+\.\d+") {
+                    Write-Success "Node.js is working: $nodeVersionOutput"
+                    return $true
+                }
+            }
+        }
+        catch {
+            # Continue trying
+        }
+        
+        $retryCount++
+        Write-Info "Checking Node.js availability... (attempt $retryCount/$MaxRetries)"
+        Start-Sleep -Seconds 3
+    }
+    
+    return $false
 }
 
 # Check if Node.js is installed
 if (-not $SkipNodeCheck) {
     Write-Info "Checking for Node.js installation..."
     
-    if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
-        Write-Warning "Node.js is not installed."
+    if (-not (Test-NodeJS -MaxRetries 3)) {
+        Write-Warning "Node.js is not installed or not working properly."
         
         # Try Chocolatey first (faster if available)
         if (Get-Command choco -ErrorAction SilentlyContinue) {
             Write-Info "Installing Node.js using Chocolatey..."
             try {
-                choco install nodejs --version=18.19.0 -y
-                # Refresh PATH
-                $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+                $chocoProcess = Start-Process -FilePath "choco" -ArgumentList "install", "nodejs", "--version=18.19.0", "-y" -Wait -PassThru -NoNewWindow
+                if ($chocoProcess.ExitCode -eq 0) {
+                    Refresh-Environment
+                    Start-Sleep -Seconds 3
+                    if (Test-NodeJS) {
+                        Write-Success "Node.js installed successfully via Chocolatey."
+                    } else {
+                        throw "Chocolatey installation verification failed"
+                    }
+                } else {
+                    throw "Chocolatey installation failed with exit code: $($chocoProcess.ExitCode)"
+                }
             }
             catch {
-                Write-Warning "Chocolatey installation failed. Trying direct download..."
+                Write-Warning "Chocolatey installation failed: $($_.Exception.Message)"
+                Write-Info "Trying direct download..."
                 if (-not (Install-NodeJS)) {
+                    Write-Error "All Node.js installation methods failed."
+                    Write-Info "Please manually install Node.js from: https://nodejs.org/"
+                    Read-Host "Press Enter to exit"
                     exit 1
                 }
             }
@@ -98,52 +179,40 @@ if (-not $SkipNodeCheck) {
         else {
             # Direct download and install
             if (-not (Install-NodeJS)) {
-                Write-Error "All Node.js installation methods failed."
+                Write-Error "Node.js installation failed."
                 Write-Info "Please manually install Node.js from: https://nodejs.org/"
+                Read-Host "Press Enter to exit"
                 exit 1
             }
         }
-    }
-    
-    # Wait a moment for PATH to update
-    Start-Sleep -Seconds 2
-    
-    # Verify Node.js installation
-    $maxRetries = 5
-    $retryCount = 0
-    $nodeInstalled = $false
-    
-    while ($retryCount -lt $maxRetries -and -not $nodeInstalled) {
-        if (Get-Command node -ErrorAction SilentlyContinue) {
-            $nodeInstalled = $true
-        }
-        else {
-            $retryCount++
-            Write-Info "Waiting for Node.js to be available... (attempt $retryCount/$maxRetries)"
-            Start-Sleep -Seconds 3
-            # Refresh PATH again
-            $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+        
+        # Final verification after installation
+        if (-not (Test-NodeJS)) {
+            Write-Error "Node.js installation verification failed."
+            Write-Warning "This might be resolved by:"
+            Write-Info "1. Restarting your command prompt"
+            Write-Info "2. Restarting your computer"
+            Write-Info "3. Running this script as Administrator"
+            Read-Host "Press Enter to exit"
+            exit 1
         }
     }
     
-    if (-not $nodeInstalled) {
-        Write-Error "Node.js installation verification failed. Please restart your command prompt and try again."
-        exit 1
-    }
-    
-    # Check Node.js version
+    # Check Node.js version requirement
     try {
-        $nodeVersionOutput = node -v
+        $nodeVersionOutput = & node -v
         $nodeVersion = $nodeVersionOutput.Substring(1).Split('.')[0]
         if ([int]$nodeVersion -lt 18) {
             Write-Error "Node.js version 18 or higher is required. Found version $nodeVersion"
             Write-Info "Please update Node.js from: https://nodejs.org/"
+            Read-Host "Press Enter to exit"
             exit 1
         }
-        Write-Success "Node.js version $nodeVersionOutput detected."
+        Write-Success "Node.js version requirement satisfied: $nodeVersionOutput"
     }
     catch {
         Write-Error "Failed to check Node.js version: $($_.Exception.Message)"
+        Read-Host "Press Enter to exit"
         exit 1
     }
 }
@@ -151,6 +220,8 @@ if (-not $SkipNodeCheck) {
 # Check if we're in the right directory (has package.json)
 if (-not (Test-Path "package.json")) {
     Write-Error "package.json not found. Please run this script from your project root directory."
+    Write-Info "Current directory: $(Get-Location)"
+    Read-Host "Press Enter to exit"
     exit 1
 }
 
@@ -162,26 +233,37 @@ $installSuccess = $false
 
 while ($retryCount -lt $maxRetries -and -not $installSuccess) {
     try {
-        npm install
-        if ($LASTEXITCODE -eq 0) {
+        Write-Info "Running npm install... (attempt $($retryCount + 1)/$maxRetries)"
+        
+        # Run npm install and capture output
+        $npmProcess = Start-Process -FilePath "npm" -ArgumentList "install" -Wait -PassThru -NoNewWindow
+        
+        if ($npmProcess.ExitCode -eq 0) {
             $installSuccess = $true
             Write-Success "Dependencies installed successfully."
         }
         else {
-            throw "npm install failed with exit code $LASTEXITCODE"
+            throw "npm install failed with exit code $($npmProcess.ExitCode)"
         }
     }
     catch {
         $retryCount++
         if ($retryCount -lt $maxRetries) {
-            Write-Warning "Dependency installation failed. Retrying... (attempt $retryCount/$maxRetries)"
+            Write-Warning "Dependency installation failed: $($_.Exception.Message)"
+            Write-Info "Retrying... (attempt $($retryCount + 1)/$maxRetries)"
             # Clear npm cache and try again
-            npm cache clean --force 2>$null
+            try {
+                & npm cache clean --force 2>$null
+            } catch {
+                # Ignore cache clean errors
+            }
             Start-Sleep -Seconds 2
         }
         else {
             Write-Error "Failed to install dependencies after $maxRetries attempts."
+            Write-Error "Error: $($_.Exception.Message)"
             Write-Info "Try running 'npm install' manually or check your internet connection."
+            Read-Host "Press Enter to exit"
             exit 1
         }
     }
@@ -190,12 +272,12 @@ while ($retryCount -lt $maxRetries -and -not $installSuccess) {
 # Initialize database
 Write-Info "Initializing database..."
 try {
-    npm run db:init
-    if ($LASTEXITCODE -eq 0) {
+    $dbProcess = Start-Process -FilePath "npm" -ArgumentList "run", "db:init" -Wait -PassThru -NoNewWindow
+    if ($dbProcess.ExitCode -eq 0) {
         Write-Success "Database initialized successfully."
     }
     else {
-        Write-Warning "Database initialization completed with warnings (exit code: $LASTEXITCODE)"
+        Write-Warning "Database initialization completed with warnings (exit code: $($dbProcess.ExitCode))"
     }
 }
 catch {
@@ -203,43 +285,22 @@ catch {
     Write-Info "You may need to run 'npm run db:init' manually later."
 }
 
-# Create .env file if it doesn't exist
-if (-not (Test-Path ".env")) {
-    Write-Info "Creating environment configuration file..."
-    try {
-        @"
-# Application Configuration
-PORT=3000
-
-# Database Configuration
-DB_PATH=./database/virtual-varsity.db
-
-# Generated on $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
-"@ | Out-File -FilePath ".env" -Encoding utf8
-        Write-Success "Environment file created successfully."
-    }
-    catch {
-        Write-Warning "Failed to create .env file. You may need to create it manually."
-    }
-}
-else {
-    Write-Info ".env file already exists. Skipping creation."
-}
+# Database directory will be created automatically by the init script
+Write-Info "Database will be initialized automatically when running 'npm run db:init'"
 
 # Verify the setup by checking if we can start the dev server (dry run)
 Write-Info "Verifying setup..."
 try {
-    # Just check if the start script exists
-    $packageJson = Get-Content "package.json" | ConvertFrom-Json
-    if ($packageJson.scripts -and $packageJson.scripts.dev) {
-        Write-Success "Development script found."
+    $packageJsonContent = Get-Content "package.json" -Raw | ConvertFrom-Json
+    if ($packageJsonContent.scripts -and $packageJsonContent.scripts.dev) {
+        Write-Success "Development script found in package.json."
     }
     else {
         Write-Warning "Development script not found in package.json"
     }
 }
 catch {
-    Write-Warning "Could not verify package.json structure."
+    Write-Warning "Could not verify package.json structure: $($_.Exception.Message)"
 }
 
 # Final success message
@@ -260,8 +321,18 @@ Write-Host "- Checking your internet connection"
 Write-Host ""
 
 # Offer to start the dev server
-$startNow = Read-Host "Would you like to start the development server now? (y/N)"
-if ($startNow -eq "y" -or $startNow -eq "Y" -or $startNow -eq "yes") {
-    Write-Info "Starting development server..."
-    npm run dev
+try {
+    $startNow = Read-Host "Would you like to start the development server now? (y/N)"
+    if ($startNow -eq "y" -or $startNow -eq "Y" -or $startNow -eq "yes") {
+        Write-Info "Starting development server..."
+        Write-Info "Press Ctrl+C to stop the server when you're done."
+        & npm run dev
+    }
 }
+catch {
+    Write-Info "Skipping development server start."
+}
+
+Write-Host ""
+Write-Success "Script completed successfully!"
+Read-Host "Press Enter to exit"

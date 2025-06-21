@@ -332,22 +332,8 @@ else
     print_info "You may need to run 'npm run db:init' manually later."
 fi
 
-# Create .env file if it doesn't exist
-if [ ! -f .env ]; then
-    print_info "Creating environment configuration file..."
-    cat > .env <<EOL
-# Application Configuration
-PORT=3000
-
-# Database Configuration
-DB_PATH=./database/virtual-varsity.db
-
-# Generated on $(date)
-EOL
-    print_success "Environment file created successfully."
-else
-    print_info ".env file already exists. Skipping creation."
-fi
+# Database directory will be created automatically by the init script
+print_info "Database will be initialized automatically in ./database/virtual-varsity.db"
 
 # Verify setup
 print_info "Verifying setup..."
@@ -385,5 +371,9 @@ echo -n "Would you like to start the development server now? (y/N): "
 read -r START_NOW
 if [[ "$START_NOW" =~ ^[Yy]([Ee][Ss])?$ ]]; then
     print_info "Starting development server..."
+    print_info "Press Ctrl+C to stop the server when you're done."
     npm run dev
 fi
+
+echo ""
+print_success "Script completed successfully!"
