@@ -1,9 +1,0 @@
-# Only ignore files not needed for deployment
-
-scripts/
-lib/
-.env.example
-.gitignore
-eslint.config.js
-postcss.config.js
-tailwind.config.js
