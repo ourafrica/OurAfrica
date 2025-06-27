@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { AuthUser } from "../types";
+import { apiClient } from "../lib/apiClient";
 
 interface AuthState {
   user: AuthUser | null;
@@ -30,27 +31,18 @@ export const useAuth = create<AuthState>()(
         set({ isLoading: true, error: null });
 
         try {
-          const response = await fetch("/api/auth/login", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ email, password }),
-          });
+          const result = await apiClient.login({ email, password });
 
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || "Login failed");
+          if (!result.success) {
+            throw new Error(result.error?.error || "Login failed");
           }
 
-          const data = await response.json();
-
           const authUser: AuthUser = {
-            id: data.user.id,
-            username: data.user.username,
-            email: data.user.email,
-            created_at: data.user.created_at,
-            token: data.token,
+            id: result.data!.user.id,
+            username: result.data!.user.username,
+            email: result.data!.user.email,
+            created_at: result.data!.user.created_at,
+            token: result.data!.token,
           };
 
           set({ user: authUser, isAuthenticated: true, isLoading: false });
@@ -71,27 +63,18 @@ export const useAuth = create<AuthState>()(
         set({ isLoading: true, error: null });
 
         try {
-          const response = await fetch("/api/auth/register", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ username, email, password }),
-          });
+          const result = await apiClient.register({ username, email, password });
 
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || "Registration failed");
+          if (!result.success) {
+            throw new Error(result.error?.error || "Registration failed");
           }
 
-          const data = await response.json();
-
           const authUser: AuthUser = {
-            id: data.user.id,
-            username: data.user.username,
-            email: data.user.email,
-            created_at: data.user.created_at,
-            token: data.token,
+            id: result.data!.user.id,
+            username: result.data!.user.username,
+            email: result.data!.user.email,
+            created_at: result.data!.user.created_at,
+            token: result.data!.token,
           };
 
           set({ user: authUser, isAuthenticated: true, isLoading: false });
@@ -109,6 +92,7 @@ export const useAuth = create<AuthState>()(
       },
 
       logout: () => {
+        apiClient.logout();
         set({ user: null, isAuthenticated: false });
       },
 

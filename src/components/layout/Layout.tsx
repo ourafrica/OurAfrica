@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet } from '@tanstack/react-router';
 import Header from './Header';
+import EnvironmentIndicator from '../ui/EnvironmentIndicator';
 
 const Layout: React.FC = () => {
   return (
@@ -9,6 +10,7 @@ const Layout: React.FC = () => {
       <main className="flex-1">
         <Outlet />
       </main>
+      <EnvironmentIndicator />
     </div>
   );
 };

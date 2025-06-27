@@ -1,24 +1,19 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { Module } from "../types";
+import { apiClient } from "../lib/apiClient";
 
 interface ModulesState {
   modules: Module[];
   currentModule: Module | null;
   isLoading: boolean;
   error: string | null;
-  loadModules: (authHeaders?: Record<string, string>) => Promise<void>;
-  loadModuleById: (
-    id: number,
-    authHeaders?: Record<string, string>
-  ) => Promise<void>;
+  loadModules: () => Promise<void>;
+  loadModuleById: (id: number) => Promise<void>;
   downloadModule: (moduleId: number) => Promise<void>;
   addModule: (module: Module) => void;
   removeModule: (moduleId: number) => void;
-  saveModule: (
-    module: Module,
-    authHeaders?: Record<string, string>
-  ) => Promise<Module>;
+  saveModule: (module: Module) => Promise<Module>;
 }
 
 export const useModules = create<ModulesState>()(
@@ -29,18 +24,17 @@ export const useModules = create<ModulesState>()(
       isLoading: false,
       error: null,
 
-      loadModules: async (authHeaders = {}) => {
+      loadModules: async () => {
         set({ isLoading: true, error: null });
 
         try {
-          const response = await fetch("/api/modules", {
-            headers: authHeaders,
-          });
-          if (!response.ok) {
-            throw new Error("Failed to fetch modules");
+          const result = await apiClient.getModules();
+          
+          if (!result.success) {
+            throw new Error(result.error?.error || "Failed to fetch modules");
           }
-          const modules = await response.json();
-          set({ modules, isLoading: false });
+          
+          set({ modules: result.data || [], isLoading: false });
         } catch (error) {
           set({
             error:
@@ -50,21 +44,20 @@ export const useModules = create<ModulesState>()(
         }
       },
 
-      loadModuleById: async (id: number, authHeaders = {}) => {
+      loadModuleById: async (id: number) => {
         set({ isLoading: true, error: null });
 
         try {
-          const response = await fetch(`/api/modules/${id}`, {
-            headers: authHeaders,
-          });
-          if (!response.ok) {
-            if (response.status === 404) {
+          const result = await apiClient.getModule(id);
+          
+          if (!result.success) {
+            if (result.error?.error === "Module not found") {
               throw new Error("Module not found");
             }
-            throw new Error("Failed to fetch module");
+            throw new Error(result.error?.error || "Failed to fetch module");
           }
-          const module = await response.json();
-          set({ currentModule: module, isLoading: false });
+          
+          set({ currentModule: result.data || null, isLoading: false });
         } catch (error) {
           set({
             error:
@@ -80,24 +73,17 @@ export const useModules = create<ModulesState>()(
         console.log(`Downloading module ${moduleId}`);
       },
 
-      saveModule: async (module: Module, authHeaders = {}) => {
+      saveModule: async (module: Module) => {
         set({ isLoading: true, error: null });
 
         try {
-          const response = await fetch("/api/modules", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...authHeaders,
-            },
-            body: JSON.stringify(module),
-          });
+          const result = await apiClient.createModule(module);
 
-          if (!response.ok) {
-            throw new Error("Failed to save module");
+          if (!result.success) {
+            throw new Error(result.error?.error || "Failed to save module");
           }
 
-          const savedModule = await response.json();
+          const savedModule = result.data!;
 
           set((state) => {
             const existingIndex = state.modules.findIndex(

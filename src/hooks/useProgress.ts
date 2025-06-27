@@ -8,6 +8,7 @@ import {
   LessonProgressData,
 } from "../types";
 import { calculateProgress } from "../lib/utils";
+import { apiClient } from "../lib/apiClient";
 
 interface ProgressState {
   progress: UserProgress[];
@@ -15,10 +16,7 @@ interface ProgressState {
   certificates: Certificate[];
   isLoading: boolean;
   error: string | null;
-  loadProgress: (
-    userId: number,
-    authHeaders?: Record<string, string>
-  ) => Promise<void>;
+  loadProgress: (userId: number) => Promise<void>;
   getModuleProgress: (
     userId: number,
     moduleId: number,
@@ -38,15 +36,13 @@ interface ProgressState {
       completed?: boolean;
       timeSpent?: number;
       quizScore?: number;
-    },
-    authHeaders?: Record<string, string>
+    }
   ) => Promise<void>;
   saveQuizScore: (
     userId: number,
     moduleId: number,
     lessonId: string,
-    score: number,
-    authHeaders?: Record<string, string>
+    score: number
   ) => Promise<void>;
   isModuleCompleted: (
     userId: number,
@@ -58,8 +54,7 @@ interface ProgressState {
   getCertificateCount: (userId: number) => number;
   generateCertificate: (
     userId: number,
-    moduleId: number,
-    authHeaders?: Record<string, string>
+    moduleId: number
   ) => Promise<void>;
 }
 
@@ -72,47 +67,26 @@ export const useProgress = create<ProgressState>()(
       isLoading: false,
       error: null,
 
-      loadProgress: async (userId: number, authHeaders = {}) => {
+      loadProgress: async (userId: number) => {
         set({ isLoading: true, error: null });
         try {
           // Load user progress for all modules
-          const progressResponse = await fetch(`/api/progress/${userId}`, {
-            headers: authHeaders,
-          });
-
+          const progressResult = await apiClient.getUserProgress(userId);
+          
           // Load lesson progress for all modules
-          const lessonProgressResponse = await fetch(
-            `/api/progress/${userId}/lessons`,
-            {
-              headers: authHeaders,
-            }
-          );
+          const lessonProgressResult = await apiClient.getUserLessonProgress(userId);
 
-          if (!progressResponse.ok || !lessonProgressResponse.ok) {
+          // Load certificates
+          const certificatesResult = await apiClient.getUserCertificates(userId);
+
+          if (!progressResult.success || !lessonProgressResult.success || !certificatesResult.success) {
             throw new Error("Failed to fetch progress");
           }
 
-          const progress = await progressResponse.json();
-          const lessonProgress = await lessonProgressResponse.json();
-
-          // Load certificates
-          const certificatesResponse = await fetch(
-            `/api/progress/${userId}/certificates`,
-            {
-              headers: authHeaders,
-            }
-          );
-
-          if (!certificatesResponse.ok) {
-            throw new Error("Failed to fetch certificates");
-          }
-
-          const certificates = await certificatesResponse.json();
-
           set({
-            progress: Array.isArray(progress) ? progress : [],
-            lessonProgress: Array.isArray(lessonProgress) ? lessonProgress : [],
-            certificates: Array.isArray(certificates) ? certificates : [],
+            progress: Array.isArray(progressResult.data) ? progressResult.data : [],
+            lessonProgress: Array.isArray(lessonProgressResult.data) ? lessonProgressResult.data : [],
+            certificates: Array.isArray(certificatesResult.data) ? certificatesResult.data : [],
             isLoading: false,
           });
         } catch (error) {
@@ -205,31 +179,23 @@ export const useProgress = create<ProgressState>()(
           timeSpent?: number;
           quizScore?: number;
         },
-        authHeaders = {}
       ) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await fetch("/api/progress/lesson", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...authHeaders,
-            },
-            body: JSON.stringify({
-              userId,
-              moduleId,
-              lessonId,
-              completed: progressData.completed || false,
-              timeSpent: progressData.timeSpent || 0,
-              quizScore: progressData.quizScore,
-            }),
+          const result = await apiClient.updateLessonProgress({
+            userId,
+            moduleId,
+            lessonId,
+            completed: progressData.completed || false,
+            timeSpent: progressData.timeSpent || 0,
+            quizScore: progressData.quizScore,
           });
 
-          if (!response.ok) {
-            throw new Error("Failed to update lesson progress");
+          if (!result.success) {
+            throw new Error(result.error?.error || "Failed to update lesson progress");
           }
 
-          const updatedProgress = await response.json();
+          const updatedProgress = result.data!;
 
           set((state) => {
             const existingIndex = state.lessonProgress.findIndex(
@@ -255,7 +221,7 @@ export const useProgress = create<ProgressState>()(
           });
 
           // Reload all progress to get updated module-level progress
-          await get().loadProgress(userId, authHeaders);
+          await get().loadProgress(userId);
         } catch (error) {
           set({
             error:
@@ -272,8 +238,7 @@ export const useProgress = create<ProgressState>()(
         userId: number,
         moduleId: number,
         lessonId: string,
-        score: number,
-        authHeaders = {}
+        score: number
       ) => {
         await get().updateLessonProgress(
           userId,
@@ -282,8 +247,7 @@ export const useProgress = create<ProgressState>()(
           {
             completed: true,
             quizScore: score,
-          },
-          authHeaders
+          }
         );
       },
 
@@ -332,33 +296,27 @@ export const useProgress = create<ProgressState>()(
 
       generateCertificate: async (
         userId: number,
-        moduleId: number,
-        authHeaders = {}
+        moduleId: number
       ) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await fetch("/api/progress/certificate", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...authHeaders,
-            },
-            body: JSON.stringify({
-              userId,
-              moduleId,
-            }),
-          });
+          const result = await apiClient.generateCertificate(userId, moduleId);
 
-          if (!response.ok) {
-            throw new Error("Failed to generate certificate");
+          if (!result.success) {
+            throw new Error(result.error?.error || "Failed to generate certificate");
           }
 
-          const certificate = await response.json();
-
-          set((state) => ({
-            certificates: [...state.certificates, certificate],
-            isLoading: false,
-          }));
+          // Reload certificates to get the new one
+          const certificatesResult = await apiClient.getUserCertificates(userId);
+          
+          if (certificatesResult.success) {
+            set(() => ({
+              certificates: certificatesResult.data || [],
+              isLoading: false,
+            }));
+          } else {
+            set({ isLoading: false });
+          }
         } catch (error) {
           set({
             error:
