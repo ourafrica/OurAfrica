@@ -219,12 +219,6 @@ class ApiClient {
     });
   }
 
-  async uploadModule(moduleData: ModuleContent): Promise<ApiResponse<{ id: number; message: string; module: Module }>> {
-    return this.makeRequest<{ id: number; message: string; module: Module }>('/api/modules/upload', {
-      method: 'POST',
-      body: JSON.stringify({ moduleData }),
-    });
-  }
 
   // Progress methods
   async getUserProgress(userId: number): Promise<ApiResponse<UserProgress[]>> {
@@ -232,11 +226,11 @@ class ApiClient {
   }
 
   async getUserLessonProgress(userId: number): Promise<ApiResponse<LessonProgress[]>> {
-    return this.makeRequest<LessonProgress[]>(`/api/progress/${userId}/lessons`);
+    return this.makeRequest<LessonProgress[]>(`/api/progress/${userId}?type=lessons`);
   }
 
   async getUserCertificates(userId: number): Promise<ApiResponse<Certificate[]>> {
-    return this.makeRequest<Certificate[]>(`/api/progress/${userId}/certificates`);
+    return this.makeRequest<Certificate[]>(`/api/progress/${userId}?type=certificates`);
   }
 
   async getModuleProgress(userId: number, moduleId: number): Promise<ApiResponse<{
@@ -275,7 +269,7 @@ class ApiClient {
   }
 
   async getCertificate(userId: number, moduleId: number): Promise<ApiResponse<Certificate>> {
-    return this.makeRequest<Certificate>(`/api/progress/certificate/${userId}/${moduleId}`);
+    return this.makeRequest<Certificate>(`/api/progress/certificate?userId=${userId}&moduleId=${moduleId}`);
   }
 
   async verifyCertificate(certificateCode: string): Promise<ApiResponse<{
