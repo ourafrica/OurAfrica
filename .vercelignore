@@ -1,14 +1,9 @@
-# Ignore source files that shouldn't be deployed
+# Only ignore files not needed for deployment
 
-src/
 scripts/
 lib/
-_.md
 .env.example
 .gitignore
 eslint.config.js
 postcss.config.js
 tailwind.config.js
-tsconfig._.json
-vite.config.ts
-index.html
