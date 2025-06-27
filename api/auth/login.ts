@@ -21,7 +21,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Get user by email
     const userResult = await query(
-      'SELECT id, username, email, password, role, created_at FROM users WHERE email = $1',
+      'SELECT id, username, email, password_hash, created_at FROM users WHERE email = $1',
       [email]
     );
 
@@ -32,7 +32,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const user = userResult.rows[0];
 
     // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.password);
+    const isValidPassword = await bcrypt.compare(password, user.password_hash);
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
@@ -50,7 +50,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         id: user.id,
         username: user.username,
         email: user.email,
-        role: user.role,
         created_at: user.created_at
       },
       token
