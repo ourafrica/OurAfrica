@@ -21,7 +21,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Get user by email
     const userResult = await query(
-      'SELECT id, username, email, password_hash, created_at FROM users WHERE email = $1',
+      'SELECT id, username, email, password_hash, role, created_at FROM users WHERE email = $1',
       [email]
     );
 
@@ -50,6 +50,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         id: user.id,
         username: user.username,
         email: user.email,
+        role: user.role,
         created_at: user.created_at
       },
       token

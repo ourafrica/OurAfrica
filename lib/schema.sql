@@ -1,12 +1,12 @@
 -- PostgreSQL Schema for Virtual Varsity
--- Compatible with Vercel Postgres, Supabase, and any PostgreSQL provider
+-- This schema is unified with the offline schema and is compatible with Vercel Postgres, Supabase, and any PostgreSQL provider.
 
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
   username VARCHAR(255) NOT NULL UNIQUE,
   email VARCHAR(255) NOT NULL UNIQUE,
-  password VARCHAR(255) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
   role VARCHAR(50) DEFAULT 'student',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -80,9 +80,3 @@ CREATE INDEX IF NOT EXISTS idx_user_progress_module_id ON user_progress(module_i
 CREATE INDEX IF NOT EXISTS idx_lesson_progress_user_module ON lesson_progress(user_id, module_id);
 CREATE INDEX IF NOT EXISTS idx_certificates_user_id ON certificates(user_id);
 CREATE INDEX IF NOT EXISTS idx_certificates_code ON certificates(certificate_code);
-
--- Additional indexes for better query performance
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
-CREATE INDEX IF NOT EXISTS idx_modules_difficulty ON modules(difficulty_level);
-CREATE INDEX IF NOT EXISTS idx_lesson_progress_completed ON lesson_progress(completed);

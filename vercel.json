@@ -1,5 +1,8 @@
 {
   "version": 2,
+  "build": {
+    "command": "npm run vercel-build"
+  },
   "functions": {
     "api/**/*.ts": {
       "memory": 1024,

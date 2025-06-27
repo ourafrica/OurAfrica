@@ -38,7 +38,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const insertResult = await query(
       `INSERT INTO users (username, email, password_hash) 
        VALUES ($1, $2, $3) 
-       RETURNING id, username, email, created_at`,
+       RETURNING id, username, email, role, created_at`,
       [username, email, hashedPassword]
     );
 
@@ -57,6 +57,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         id: user.id,
         username: user.username,
         email: user.email,
+        role: user.role,
         created_at: user.created_at
       },
       token
