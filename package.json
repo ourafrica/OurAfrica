@@ -11,8 +11,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "db:init": "tsx scripts/init-db.ts",
-    "db:init-postgres": "tsx scripts/init-postgres.ts",
-    "vercel-build": "npm run build"
+    "db:init-postgres": "tsx scripts/init-postgres.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
