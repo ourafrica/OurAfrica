@@ -1,4 +1,4 @@
-import db from "./database";
+import db from "./database/index.js";
 import { Module, UserProgress, User } from "../types";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";

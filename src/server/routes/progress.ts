@@ -10,7 +10,7 @@ import {
   getAllLessonProgress,
   getAllUserCertificates,
   resetModuleProgress,
-} from "../api";
+} from "../api.js";
 
 const router = express.Router();
 

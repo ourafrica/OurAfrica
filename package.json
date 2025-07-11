@@ -3,16 +3,35 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "main": "main.cjs",
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "electron:start": "electron .",
+    "electron:build": "npm run build:server && npm run build && npm run electron:start",
     "client": "vite",
     "server": "tsx src/server/index.ts",
     "build": "vite build",
+    "build:server": "tsc -p tsconfig.server.json && cp src/server/database/schema.sql dist-server/server/database/",
     "lint": "eslint .",
     "preview": "vite preview",
     "db:init": "tsx scripts/init-db.ts",
     "db:init-postgres": "tsx scripts/init-postgres.ts",
-    "vercel-build": "npm run db:init-postgres && npm run build"
+    "vercel-build": "npm run db:init-postgres && npm run build",
+    "dist": "npm run build:server && npm run build && electron-builder"
+  },
+  "build": {
+    "appId": "com.example.virtual-varsity",
+    "productName": "Virtual Varsity",
+    "files": [
+      "dist/**/*",
+      "dist-server/**/*",
+      "main.cjs",
+      "package.json",
+      "node_modules/better-sqlite3/**/*"
+    ],
+    "directories": {
+      "buildResources": "assets"
+    }
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
@@ -40,6 +59,7 @@
   "devDependencies": {
     "@eslint/js": "^9.9.1",
     "@types/bcryptjs": "^2.4.6",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/cors": "^2.8.18",
     "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^20.11.25",
@@ -48,6 +68,9 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.18",
+    "electron": "^37.2.1",
+    "electron-builder": "^26.0.12",
+    "electron-rebuild": "^3.2.9",
     "eslint": "^9.9.1",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.11",

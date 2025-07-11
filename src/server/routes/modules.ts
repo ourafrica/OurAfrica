@@ -1,5 +1,5 @@
 import express from "express";
-import { getModules, getModuleById, saveModule } from "../api";
+import { getModules, getModuleById, saveModule } from "../api.js";
 
 const router = express.Router();
 
