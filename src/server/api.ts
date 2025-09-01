@@ -1,78 +1,98 @@
-import db from "./database";
-import { Module, UserProgress, User } from "../types";
+import sql from "./database/index";
+import { Module, UserProgress, User } from "../types"; // Fixed import path
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-export function getModules(): Module[] {
-  const stmt = db.prepare("SELECT * FROM modules");
-  const modules = stmt.all() as Module[];
-
-  return modules.map((module) => {
-    return {
-      ...module,
-      content: JSON.parse(module.content as unknown as string),
-    };
-  });
+// Define interfaces for database row types
+interface ModuleRow {
+  id: number;
+  title: string;
+  description: string;
+  content: string;
+  version: string;
+  author?: string;
+  difficulty_level?: string;
+  tags: string;
+  estimated_duration?: number;
+  created_at: string;
+  updated_at?: string;
 }
 
-export function getModuleById(id: number): Module | null {
-  const stmt = db.prepare("SELECT * FROM modules WHERE id = ?");
-  const module = stmt.get(id) as Module;
-
-  if (module) {
-    return {
-      ...module,
-      content: JSON.parse(module.content as unknown as string),
-    };
-  }
-  return null;
+interface UserRow {
+  id: number;
+  username: string;
+  email: string;
+  password: string;
+  role?: string;
+  created_at: string;
 }
 
-export function getUserProgress(
-  userId: number,
-  moduleId: number
-): UserProgress | null {
-  const stmt = db.prepare(
-    "SELECT * FROM user_progress WHERE user_id = ? AND module_id = ?"
-  );
-  return stmt.get(userId, moduleId) as UserProgress | null;
+// Module functions
+export async function getModules(): Promise<Module[]> {
+  const result = await sql`SELECT * FROM modules ORDER BY created_at DESC` as ModuleRow[];
+  return result.map((module) => ({
+    ...module,
+    content: JSON.parse(module.content),
+    tags: JSON.parse(module.tags || '[]')
+  }));
 }
 
-export function updateUserProgress(
-  userId: number,
-  moduleId: number,
-  progress: Partial<UserProgress>
+export async function getModuleById(id: number): Promise<Module | null> {
+  const result = await sql`SELECT * FROM modules WHERE id = ${id}` as ModuleRow[];
+  if (result.length === 0) return null;
+
+  const module = result[0];
+  return {
+    ...module,
+    content: JSON.parse(module.content),
+    tags: JSON.parse(module.tags || '[]')
+  };
+}
+
+export async function getUserProgress(
+    userId: number,
+    moduleId: number
+): Promise<UserProgress | null> {
+  const result = await sql`
+    SELECT * FROM user_progress 
+    WHERE user_id = ${userId} AND module_id = ${moduleId}
+  ` as UserProgress[];
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function updateUserProgress(
+    userId: number,
+    moduleId: number,
+    progress: Partial<UserProgress>
 ) {
-  const stmt = db.prepare(`
+  await sql`
     INSERT INTO user_progress (user_id, module_id, progress, last_accessed)
-    VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-    ON CONFLICT(user_id, module_id) DO UPDATE SET
-    progress = excluded.progress,
-    last_accessed = excluded.last_accessed
-  `);
-  stmt.run(userId, moduleId, JSON.stringify(progress));
+    VALUES (${userId}, ${moduleId}, ${JSON.stringify(progress)}, CURRENT_TIMESTAMP)
+      ON CONFLICT (user_id, module_id) DO UPDATE SET
+      progress = EXCLUDED.progress,
+                                            last_accessed = EXCLUDED.last_accessed
+  `;
 }
 
-export function saveModule(moduleData: Module): Module {
-  const stmt = db.prepare(`
+export async function saveModule(moduleData: Module): Promise<Module> {
+  const result = await sql`
     INSERT INTO modules (title, description, content, version, author, difficulty_level, tags, estimated_duration)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  const result = stmt.run(
-    moduleData.title,
-    moduleData.description,
-    JSON.stringify(moduleData.content),
-    moduleData.version || "1.0.0",
-    moduleData.author || null,
-    moduleData.difficulty_level || "beginner",
-    JSON.stringify(moduleData.tags || []),
-    moduleData.content.estimatedTime || null
-  );
+    VALUES (
+      ${moduleData.title},
+      ${moduleData.description},
+      ${JSON.stringify(moduleData.content)},
+      ${moduleData.version || "1.0.0"},
+      ${moduleData.author || null},
+      ${moduleData.difficulty_level || "beginner"},
+      ${JSON.stringify(moduleData.tags || [])},
+      ${moduleData.content.estimatedTime || null}
+    )
+    RETURNING id
+  ` as { id: number }[];
 
-  const moduleId = result.lastInsertRowid as number;
+  const moduleId = result[0].id;
+  const savedModule = await getModuleById(moduleId);
 
-  // Retrieve the saved module from database to ensure consistent format
-  const savedModule = getModuleById(moduleId);
   if (!savedModule) {
     throw new Error("Failed to retrieve saved module");
   }
@@ -81,19 +101,19 @@ export function saveModule(moduleData: Module): Module {
 }
 
 // Authentication functions
-const JWT_SECRET =
-  process.env.JWT_SECRET || "your-secret-key-change-in-production";
+const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-in-production";
 
 export async function registerUser(
-  username: string,
-  email: string,
-  password: string
+    username: string,
+    email: string,
+    password: string
 ): Promise<{ user: User; token: string }> {
   // Check if user already exists
-  const existingUser = db
-    .prepare("SELECT id FROM users WHERE email = ? OR username = ?")
-    .get(email, username);
-  if (existingUser) {
+  const existingUsers = await sql`
+    SELECT id FROM users WHERE email = ${email} OR username = ${username}
+  ` as { id: number }[];
+
+  if (existingUsers.length > 0) {
     throw new Error("User already exists with this email or username");
   }
 
@@ -101,19 +121,13 @@ export async function registerUser(
   const hashedPassword = await bcrypt.hash(password, 12);
 
   // Insert user
-  const stmt = db.prepare(`
+  const result = await sql`
     INSERT INTO users (username, email, password)
-    VALUES (?, ?, ?)
-  `);
-  const result = stmt.run(username, email, hashedPassword);
-  const userId = result.lastInsertRowid as number;
+    VALUES (${username}, ${email}, ${hashedPassword})
+    RETURNING id, username, email, role, created_at
+  ` as User[];
 
-  // Get created user
-  const user = db
-    .prepare(
-      "SELECT id, username, email, role, created_at FROM users WHERE id = ?"
-    )
-    .get(userId) as User;
+  const user = result[0];
 
   // Generate JWT token
   const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, {
@@ -124,32 +138,39 @@ export async function registerUser(
 }
 
 export async function loginUser(
-  email: string,
-  password: string
+    email: string,
+    password: string
 ): Promise<{ user: User; token: string }> {
   // Get user by email
-  const user = db
-    .prepare("SELECT * FROM users WHERE email = ?")
-    .get(email) as User & { password: string };
-  if (!user) {
+  const result = await sql`SELECT * FROM users WHERE email = ${email}` as UserRow[];
+
+  if (result.length === 0) {
     throw new Error("Invalid email or password");
   }
 
+  const userWithPassword = result[0];
+
   // Verify password
-  const isValidPassword = await bcrypt.compare(password, user.password);
+  const isValidPassword = await bcrypt.compare(password, userWithPassword.password);
   if (!isValidPassword) {
     throw new Error("Invalid email or password");
   }
 
   // Generate JWT token
-  const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, {
+  const token = jwt.sign({ userId: userWithPassword.id, email: userWithPassword.email }, JWT_SECRET, {
     expiresIn: "7d",
   });
 
-  // Return user without password
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { password: _password, ...userWithoutPassword } = user;
-  return { user: userWithoutPassword as User, token };
+  // Return user without password field
+  const user: User = {
+    id: userWithPassword.id,
+    username: userWithPassword.username,
+    email: userWithPassword.email,
+    role: userWithPassword.role,
+    created_at: userWithPassword.created_at
+  };
+
+  return { user, token };
 }
 
 export function verifyToken(token: string): { userId: number; email: string } {
@@ -164,134 +185,123 @@ export function verifyToken(token: string): { userId: number; email: string } {
   }
 }
 
-export function getUserById(id: number): User | null {
-  const stmt = db.prepare(
-    "SELECT id, username, email, role, created_at FROM users WHERE id = ?"
-  );
-  return stmt.get(id) as User | null;
+export async function getUserById(id: number): Promise<User | null> {
+  const result = await sql`
+    SELECT id, username, email, role, created_at FROM users WHERE id = ${id}
+  ` as User[];
+  return result.length > 0 ? result[0] : null;
 }
 
 // Progress tracking functions
-export function updateLessonProgress(
-  userId: number,
-  moduleId: number,
-  lessonId: string,
-  completed: boolean,
-  timeSpent: number,
-  quizScore?: number
+export async function updateLessonProgress(
+    userId: number,
+    moduleId: number,
+    lessonId: string,
+    completed: boolean,
+    timeSpent: number,
+    quizScore?: number
 ) {
-  const stmt = db.prepare(`
+  await sql`
     INSERT INTO lesson_progress (user_id, module_id, lesson_id, completed, time_spent, quiz_score, completed_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-    ON CONFLICT(user_id, module_id, lesson_id) DO UPDATE SET
-    completed = excluded.completed,
-    time_spent = excluded.time_spent,
-    quiz_score = excluded.quiz_score,
-    completed_at = CASE WHEN excluded.completed = 1 THEN CURRENT_TIMESTAMP ELSE completed_at END,
+    VALUES (
+             ${userId},
+             ${moduleId},
+             ${lessonId},
+             ${completed},
+             ${timeSpent},
+             ${quizScore || null},
+             ${completed ? sql`CURRENT_TIMESTAMP` : null},
+             CURRENT_TIMESTAMP
+           )
+      ON CONFLICT (user_id, module_id, lesson_id) DO UPDATE SET
+      completed = EXCLUDED.completed,
+                                                       time_spent = EXCLUDED.time_spent,
+                                                       quiz_score = EXCLUDED.quiz_score,
+                                                       completed_at = CASE WHEN EXCLUDED.completed = TRUE THEN CURRENT_TIMESTAMP ELSE lesson_progress.completed_at END,
     updated_at = CURRENT_TIMESTAMP
-  `);
-  stmt.run(
-    userId,
-    moduleId,
-    lessonId,
-    completed ? 1 : 0,
-    timeSpent,
-    quizScore || null
-  );
+  `;
 
   // Update module-level progress
-  updateModuleProgress(userId, moduleId);
+  await updateModuleProgress(userId, moduleId);
 }
 
-export function updateModuleProgress(userId: number, moduleId: number) {
+export async function updateModuleProgress(userId: number, moduleId: number) {
   // Get module content to calculate total lessons/quizzes
-  const module = getModuleById(moduleId);
+  const module = await getModuleById(moduleId);
   if (!module) return;
 
   const totalLessons = module.content.lessons.length;
   const totalQuizzes = module.content.quizzes.length;
 
   // Get completed lessons and quizzes
-  const completedLessons = db
-    .prepare(
-      `
+  const completedLessons = await sql`
     SELECT COUNT(*) as count FROM lesson_progress 
-    WHERE user_id = ? AND module_id = ? AND completed = 1 AND quiz_score IS NULL
-  `
-    )
-    .get(userId, moduleId) as { count: number };
+    WHERE user_id = ${userId} AND module_id = ${moduleId} 
+    AND completed = TRUE AND quiz_score IS NULL
+  ` as { count: string }[];
 
-  const completedQuizzes = db
-    .prepare(
-      `
+  const completedQuizzes = await sql`
     SELECT COUNT(*) as count FROM lesson_progress 
-    WHERE user_id = ? AND module_id = ? AND completed = 1 AND quiz_score IS NOT NULL
-  `
-    )
-    .get(userId, moduleId) as { count: number };
+    WHERE user_id = ${userId} AND module_id = ${moduleId} 
+    AND completed = TRUE AND quiz_score IS NOT NULL
+  ` as { count: string }[];
 
-  const totalTimeSpent = db
-    .prepare(
-      `
+  const timeSpentResult = await sql`
     SELECT COALESCE(SUM(time_spent), 0) as total FROM lesson_progress 
-    WHERE user_id = ? AND module_id = ?
-  `
-    )
-    .get(userId, moduleId) as { total: number };
+    WHERE user_id = ${userId} AND module_id = ${moduleId}
+  ` as { total: string }[];
 
   const progressPercentage = Math.round(
-    ((completedLessons.count + completedQuizzes.count) /
-      (totalLessons + totalQuizzes)) *
-      100
+      ((Number(completedLessons[0].count) + Number(completedQuizzes[0].count)) /
+          (totalLessons + totalQuizzes)) * 100
   );
 
   const isCompleted = progressPercentage === 100;
 
   // Update module progress
-  const stmt = db.prepare(`
-    INSERT INTO user_progress (user_id, module_id, progress_percentage, completed, completion_date, total_time_spent, last_accessed)
-    VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-    ON CONFLICT(user_id, module_id) DO UPDATE SET
-    progress_percentage = excluded.progress_percentage,
-    completed = excluded.completed,
-    completion_date = CASE WHEN excluded.completed = 1 AND completed = 0 THEN CURRENT_TIMESTAMP ELSE completion_date END,
-    total_time_spent = excluded.total_time_spent,
+  await sql`
+    INSERT INTO user_progress (
+      user_id, module_id, progress_percentage, completed,
+      completion_date, total_time_spent, last_accessed
+    )
+    VALUES (
+             ${userId}, ${moduleId}, ${progressPercentage}, ${isCompleted},
+             ${isCompleted ? sql`CURRENT_TIMESTAMP` : null},
+             ${Number(timeSpentResult[0].total)}, CURRENT_TIMESTAMP
+           )
+      ON CONFLICT (user_id, module_id) DO UPDATE SET
+      progress_percentage = EXCLUDED.progress_percentage,
+                                            completed = EXCLUDED.completed,
+                                            completion_date = CASE
+                                            WHEN EXCLUDED.completed = TRUE AND user_progress.completed = FALSE
+                                            THEN CURRENT_TIMESTAMP
+                                            ELSE user_progress.completion_date
+    END,
+    total_time_spent = EXCLUDED.total_time_spent,
     last_accessed = CURRENT_TIMESTAMP
-  `);
-  stmt.run(
-    userId,
-    moduleId,
-    progressPercentage,
-    isCompleted ? 1 : 0,
-    isCompleted ? new Date().toISOString() : null,
-    totalTimeSpent.total
-  );
+  `;
 
   return { progressPercentage, isCompleted };
 }
 
-export function getLessonProgress(
-  userId: number,
-  moduleId: number,
-  lessonId: string
+export async function getLessonProgress(
+    userId: number,
+    moduleId: number,
+    lessonId: string
 ) {
-  const stmt = db.prepare(`
-    SELECT * FROM lesson_progress 
-    WHERE user_id = ? AND module_id = ? AND lesson_id = ?
-  `);
-  return stmt.get(userId, moduleId, lessonId);
+  const result = await sql`
+    SELECT * FROM lesson_progress
+    WHERE user_id = ${userId} AND module_id = ${moduleId} AND lesson_id = ${lessonId}
+  `;
+  return result.length > 0 ? result[0] : null;
 }
 
-export function getModuleProgressDetailed(userId: number, moduleId: number) {
-  const moduleProgress = getUserProgress(userId, moduleId);
-  const lessonProgress = db
-    .prepare(
-      `
-    SELECT * FROM lesson_progress 
-    WHERE user_id = ? AND module_id = ?
-  `
-    )
-    .all(userId, moduleId);
+export async function getModuleProgressDetailed(userId: number, moduleId: number) {
+  const moduleProgress = await getUserProgress(userId, moduleId);
+  const lessonProgress = await sql`
+    SELECT * FROM lesson_progress
+    WHERE user_id = ${userId} AND module_id = ${moduleId}
+  `;
 
   return {
     moduleProgress,
@@ -299,52 +309,44 @@ export function getModuleProgressDetailed(userId: number, moduleId: number) {
   };
 }
 
-export function getAllUserProgress(userId: number) {
-  const stmt = db.prepare("SELECT * FROM user_progress WHERE user_id = ?");
-  return stmt.all(userId);
+export async function getAllUserProgress(userId: number) {
+  return await sql`SELECT * FROM user_progress WHERE user_id = ${userId}` as UserProgress[];
 }
 
-export function getAllLessonProgress(userId: number) {
-  const stmt = db.prepare("SELECT * FROM lesson_progress WHERE user_id = ?");
-  return stmt.all(userId);
+export async function getAllLessonProgress(userId: number) {
+  return await sql`SELECT * FROM lesson_progress WHERE user_id = ${userId}`;
 }
 
-export function getAllUserCertificates(userId: number) {
-  const stmt = db.prepare("SELECT * FROM certificates WHERE user_id = ?");
-  return stmt.all(userId);
+export async function getAllUserCertificates(userId: number) {
+  return await sql`SELECT * FROM certificates WHERE user_id = ${userId}`;
 }
 
 // Certificate functions
-export function generateCertificate(userId: number, moduleId: number): string {
+export async function generateCertificate(userId: number, moduleId: number): Promise<string> {
   // Check if module is completed
-  const progress = getUserProgress(userId, moduleId);
+  const progress = await getUserProgress(userId, moduleId);
   if (!progress || !progress.completed) {
     throw new Error("Module must be completed before generating certificate");
   }
 
   // Check if certificate already exists
-  const existingCert = db
-    .prepare(
-      `
+  const existingCerts = await sql`
     SELECT certificate_code FROM certificates 
-    WHERE user_id = ? AND module_id = ?
-  `
-    )
-    .get(userId, moduleId) as { certificate_code: string } | undefined;
+    WHERE user_id = ${userId} AND module_id = ${moduleId}
+  ` as { certificate_code: string }[];
 
-  if (existingCert) {
-    return existingCert.certificate_code;
+  if (existingCerts.length > 0) {
+    return existingCerts[0].certificate_code;
   }
 
   // Generate unique certificate code
   const timestamp = Date.now().toString(36);
   const random = Math.random().toString(36).substring(2, 6);
-  const certificateCode =
-    `VC-${userId}-${moduleId}-${timestamp}-${random}`.toUpperCase();
+  const certificateCode = `VC-${userId}-${moduleId}-${timestamp}-${random}`.toUpperCase();
 
   // Get user and module info for certificate data
-  const user = getUserById(userId);
-  const module = getModuleById(moduleId);
+  const user = await getUserById(userId);
+  const module = await getModuleById(moduleId);
 
   const certificateData = {
     user: user?.username,
@@ -354,50 +356,40 @@ export function generateCertificate(userId: number, moduleId: number): string {
   };
 
   // Save certificate to database
-  const stmt = db.prepare(`
+  await sql`
     INSERT INTO certificates (user_id, module_id, certificate_code, certificate_data)
-    VALUES (?, ?, ?, ?)
-  `);
-  stmt.run(userId, moduleId, certificateCode, JSON.stringify(certificateData));
+    VALUES (${userId}, ${moduleId}, ${certificateCode}, ${JSON.stringify(certificateData)})
+  `;
 
   return certificateCode;
 }
 
-export function getCertificate(userId: number, moduleId: number) {
-  const stmt = db.prepare(`
-    SELECT * FROM certificates 
-    WHERE user_id = ? AND module_id = ?
-  `);
-  return stmt.get(userId, moduleId);
+export async function getCertificate(userId: number, moduleId: number) {
+  const result = await sql`
+    SELECT * FROM certificates
+    WHERE user_id = ${userId} AND module_id = ${moduleId}
+  `;
+  return result.length > 0 ? result[0] : null;
 }
 
-export function verifyCertificate(certificateCode: string) {
-  const stmt = db.prepare(`
-    SELECT c.*, u.username, m.title as module_title 
+export async function verifyCertificate(certificateCode: string) {
+  const result = await sql`
+    SELECT c.*, u.username, m.title as module_title
     FROM certificates c
-    JOIN users u ON c.user_id = u.id
-    JOIN modules m ON c.module_id = m.id
-    WHERE c.certificate_code = ? AND c.verified = 1
-  `);
-  return stmt.get(certificateCode);
+           JOIN users u ON c.user_id = u.id
+           JOIN modules m ON c.module_id = m.id
+    WHERE c.certificate_code = ${certificateCode} AND c.verified = TRUE
+  `;
+  return result.length > 0 ? result[0] : null;
 }
 
-/**
- * Reset all progress and certificates for a user/module
- */
-export function resetModuleProgress(userId: number, moduleId: number) {
+export async function resetModuleProgress(userId: number, moduleId: number) {
   // Delete all lesson progress for this user/module
-  db.prepare(
-    "DELETE FROM lesson_progress WHERE user_id = ? AND module_id = ?"
-  ).run(userId, moduleId);
+  await sql`DELETE FROM lesson_progress WHERE user_id = ${userId} AND module_id = ${moduleId}`;
 
   // Delete module-level progress
-  db.prepare(
-    "DELETE FROM user_progress WHERE user_id = ? AND module_id = ?"
-  ).run(userId, moduleId);
+  await sql`DELETE FROM user_progress WHERE user_id = ${userId} AND module_id = ${moduleId}`;
 
   // Delete any certificate for this user/module
-  db.prepare(
-    "DELETE FROM certificates WHERE user_id = ? AND module_id = ?"
-  ).run(userId, moduleId);
+  await sql`DELETE FROM certificates WHERE user_id = ${userId} AND module_id = ${moduleId}`;
 }
