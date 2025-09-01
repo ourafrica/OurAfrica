@@ -86,7 +86,7 @@ This app is designed to be database-agnostic. You can easily switch between prov
 npm install
 
 # Set up environment variables
-cp .env.example .env.local
+cp .env.local .env.local
 # Edit .env.local with your database connection
 
 # Initialize database (if using local PostgreSQL)

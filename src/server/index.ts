@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 // import path from "path";
 // import { fileURLToPath } from "url";
-import { initializeDatabase } from "./database/index";
+import { initializeDatabase } from "./database";
 
 // Import API routes
 import modulesRouter from "./routes/modules";
@@ -27,7 +27,7 @@ app.use("/api/progress", progressRouter);
 app.use("/api/auth", authRouter);
 
 // Health check endpoint
-app.get("/api/health", (req, res) => {
+app.get("/api/health", (_req, res) => {
   res.json({ status: "OK", message: "Our Africa API is running" });
 });
 

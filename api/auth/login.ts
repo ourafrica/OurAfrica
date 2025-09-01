@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import * as bcrypt from 'bcryptjs';
+import * as jwt from 'jsonwebtoken';
 import { query } from '../../lib/db';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
@@ -21,8 +21,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Get user by email
     const userResult = await query(
-      'SELECT id, username, email, password_hash, role, created_at FROM users WHERE email = $1',
-      [email]
+        'SELECT id, username, email, password_hash, role, created_at FROM users WHERE email = $1',
+        [email]
     );
 
     if (userResult.rows.length === 0) {
@@ -39,9 +39,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user.id, email: user.email }, 
-      JWT_SECRET, 
-      { expiresIn: '7d' }
+        { userId: user.id, email: user.email },
+        JWT_SECRET,
+        { expiresIn: '7d' }
     );
 
     // Return user without password

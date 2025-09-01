@@ -5,6 +5,12 @@ export const sampleModule: Module = {
   id: 1,
   title: 'Introduction to Computer Science',
   description: 'A foundational course that introduces the basic principles of computer science, programming concepts, and computational thinking.',
+  author: 'Computer Science Department',
+  difficulty_level: 'Beginner',
+  tags: ['programming', 'algorithms', 'computer-science', 'software-engineering'],
+  estimated_duration: 180,
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
   content: {
     lessons: [
       {
@@ -73,7 +79,7 @@ export const sampleModule: Module = {
           {
             type: 'code',
             language: 'javascript',
-            content: '// Implementation of a simple stack in JavaScript\nclass Stack {\n  constructor() {\n    this.items = [];\n  }\n  \n  push(element) {\n    this.items.push(element);\n  }\n  \n  pop() {\n    if (this.items.length === 0) return \"Underflow\";\n    return this.items.pop();\n  }\n  \n  peek() {\n    return this.items[this.items.length - 1];\n  }\n  \n  isEmpty() {\n    return this.items.length === 0;\n  }\n}\n\n// Usage\nconst stack = new Stack();\nstack.push(10);\nstack.push(20);\nconsole.log(stack.peek()); // 20\nconsole.log(stack.pop());  // 20\nconsole.log(stack.isEmpty()); // false'
+            content: '// Implementation of a simple stack in JavaScript\nclass Stack {\n  constructor() {\n    this.items = [];\n  }\n  \n  push(element) {\n    this.items.push(element);\n  }\n  \n  pop() {\n    if (this.items.length === 0) return \\"Underflow\\";\n    return this.items.pop();\n  }\n  \n  peek() {\n    return this.items[this.items.length - 1];\n  }\n  \n  isEmpty() {\n    return this.items.length === 0;\n  }\n}\n\n// Usage\nconst stack = new Stack();\nstack.push(10);\nstack.push(20);\nconsole.log(stack.peek()); // 20\nconsole.log(stack.pop());  // 20\nconsole.log(stack.isEmpty()); // false'
           }
         ]
       },
@@ -280,6 +286,5 @@ export const sampleModule: Module = {
     ],
     estimatedTime: 180
   },
-  version: '1.0.0',
-  downloadedAt: new Date().toISOString()
+  version: '1.0.0'
 };

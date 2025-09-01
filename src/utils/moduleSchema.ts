@@ -337,7 +337,8 @@ export class ModuleValidator {
       description: this.sanitizeString(data.description as string),
       content: this.sanitizeContent(data.content as RawModuleContent),
       version: (data.version as string) || "1.0.0",
-      downloadedAt: new Date().toISOString(),
+      created_at: new Date().toISOString(), // Use created_at instead of downloadedAt
+      // Remove downloadedAt property
     };
 
     return sanitizedModule;

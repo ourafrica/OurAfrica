@@ -10,9 +10,8 @@ export const useDataRefresher = () => {
 
   useEffect(() => {
     if (user) {
-      const authHeaders = useAuth.getState().getAuthHeaders();
-      loadModules(authHeaders);
-      loadProgress(user.id, authHeaders);
+      loadModules();
+      loadProgress(user.id);
     }
   }, [user, loadModules, loadProgress]);
 };
