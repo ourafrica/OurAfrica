@@ -1,12 +1,66 @@
 import { query } from './db';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import type { ModuleContent } from '../src/types';
+import * as bcrypt from 'bcryptjs';
+import * as jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
-// Types
-interface Module {
+// Define proper types for module content
+export interface Lesson {
+  id: string;
+  title: string;
+  content: string;
+  type: 'text' | 'video' | 'interactive';
+  duration?: number;
+}
+
+export interface Quiz {
+  id: string;
+  title: string;
+  questions: QuizQuestion[];
+}
+
+export interface QuizQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  correct: number;
+  explanation?: string;
+}
+
+export interface ModuleContent {
+  lessons?: Lesson[];
+  quizzes?: Quiz[];
+  estimatedTime?: number;
+  prerequisites?: string[];
+  learningObjectives?: string[];
+}
+
+// Database row interfaces (what we get from the migration)
+interface ModuleRow {
+  id: number;
+  title: string;
+  description: string;
+  content: string | ModuleContent; // Could be JSON string or parsed object
+  version: string;
+  author?: string;
+  difficulty_level: string;
+  tags: string | string[]; // Could be JSON string or parsed array
+  estimated_duration?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+interface UserRow {
+  id: number;
+  username: string;
+  email: string;
+  password_hash: string;
+  role: string;
+  created_at: string;
+}
+
+// Main exported interfaces
+export interface Module {
   id: number;
   title: string;
   description: string;
@@ -20,7 +74,7 @@ interface Module {
   updated_at: string;
 }
 
-interface User {
+export interface User {
   id: number;
   username: string;
   email: string;
@@ -28,7 +82,7 @@ interface User {
   created_at: string;
 }
 
-interface UserProgress {
+export interface UserProgress {
   id: number;
   user_id: number;
   module_id: number;
@@ -39,52 +93,86 @@ interface UserProgress {
   last_accessed: string;
 }
 
+export interface LessonProgress {
+  id: number;
+  user_id: number;
+  module_id: number;
+  lesson_id: string;
+  completed: boolean;
+  time_spent: number;
+  quiz_score?: number;
+  completed_at?: string;
+  updated_at: string;
+}
+
+export interface Certificate {
+  id: number;
+  user_id: number;
+  module_id: number;
+  certificate_code: string;
+  certificate_data: string | Record<string, unknown>;
+  verified: boolean;
+  issued_at: string;
+}
+
+// Helper function to parse JSON safely
+function parseJSON<T>(value: string | T, fallback: T): T {
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value) as T;
+    } catch {
+      return fallback;
+    }
+  }
+  return value;
+}
+
 // Module functions
 export async function getModules(): Promise<Module[]> {
   const result = await query('SELECT * FROM modules ORDER BY created_at DESC');
-  
-  return result.rows.map((module: Record<string, unknown>) => ({
+
+  return result.rows.map((module: ModuleRow) => ({
     ...module,
-    content: typeof module.content === 'string' ? JSON.parse(module.content) : module.content,
-    tags: typeof module.tags === 'string' ? JSON.parse(module.tags) : module.tags
-  } as Module));
+    content: parseJSON<ModuleContent>(module.content, { lessons: [], quizzes: [] }),
+    tags: parseJSON<string[]>(module.tags, [])
+  }));
 }
 
 export async function getModuleById(id: number): Promise<Module | null> {
   const result = await query('SELECT * FROM modules WHERE id = $1', [id]);
-  
+
   if (result.rows.length === 0) {
     return null;
   }
 
-  const module = result.rows[0];
+  const module = result.rows[0] as ModuleRow;
   return {
     ...module,
-    content: typeof module.content === 'string' ? JSON.parse(module.content) : module.content,
-    tags: typeof module.tags === 'string' ? JSON.parse(module.tags) : module.tags
+    content: parseJSON<ModuleContent>(module.content, { lessons: [], quizzes: [] }),
+    tags: parseJSON<string[]>(module.tags, [])
   };
 }
 
 export async function saveModule(moduleData: Omit<Module, 'id' | 'created_at' | 'updated_at'>): Promise<Module> {
   const result = await query(
-    `INSERT INTO modules (title, description, content, version, author, difficulty_level, tags, estimated_duration)
+      `INSERT INTO modules (title, description, content, version, author, difficulty_level, tags, estimated_duration)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      RETURNING id`,
-    [
-      moduleData.title,
-      moduleData.description,
-      JSON.stringify(moduleData.content),
-      moduleData.version || '1.0.0',
-      moduleData.author || null,
-      moduleData.difficulty_level || 'beginner',
-      JSON.stringify(moduleData.tags || []),
-      moduleData.content?.estimatedTime || null
-    ]
+      [
+        moduleData.title,
+        moduleData.description,
+        JSON.stringify(moduleData.content),
+        moduleData.version || '1.0.0',
+        moduleData.author || null,
+        moduleData.difficulty_level || 'beginner',
+        JSON.stringify(moduleData.tags || []),
+        moduleData.estimated_duration || null
+      ]
   );
 
-  const moduleId = result.rows[0].id;
+  const moduleId = result.rows[0].id as number;
   const savedModule = await getModuleById(moduleId);
-  
+
   if (!savedModule) {
     throw new Error('Failed to retrieve saved module');
   }
@@ -95,23 +183,23 @@ export async function saveModule(moduleData: Omit<Module, 'id' | 'created_at' | 
 // Progress functions
 export async function getUserProgress(userId: number, moduleId: number): Promise<UserProgress | null> {
   const result = await query(
-    'SELECT * FROM user_progress WHERE user_id = $1 AND module_id = $2',
-    [userId, moduleId]
+      'SELECT * FROM user_progress WHERE user_id = $1 AND module_id = $2',
+      [userId, moduleId]
   );
-  
-  return result.rows.length > 0 ? result.rows[0] : null;
+
+  return result.rows.length > 0 ? (result.rows[0] as UserProgress) : null;
 }
 
 export async function updateLessonProgress(
-  userId: number,
-  moduleId: number,
-  lessonId: string,
-  completed: boolean,
-  timeSpent: number,
-  quizScore?: number
-) {
+    userId: number,
+    moduleId: number,
+    lessonId: string,
+    completed: boolean,
+    timeSpent: number,
+    quizScore?: number
+): Promise<void> {
   await query(
-    `INSERT INTO lesson_progress (user_id, module_id, lesson_id, completed, time_spent, quiz_score, completed_at, updated_at)
+      `INSERT INTO lesson_progress (user_id, module_id, lesson_id, completed, time_spent, quiz_score, completed_at, updated_at)
      VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
      ON CONFLICT (user_id, module_id, lesson_id) 
      DO UPDATE SET
@@ -120,14 +208,14 @@ export async function updateLessonProgress(
        quiz_score = EXCLUDED.quiz_score,
        completed_at = CASE WHEN EXCLUDED.completed = true THEN NOW() ELSE lesson_progress.completed_at END,
        updated_at = NOW()`,
-    [userId, moduleId, lessonId, completed, timeSpent, quizScore || null]
+      [userId, moduleId, lessonId, completed, timeSpent, quizScore || null]
   );
 
   // Update module-level progress
   await updateModuleProgress(userId, moduleId);
 }
 
-export async function updateModuleProgress(userId: number, moduleId: number) {
+export async function updateModuleProgress(userId: number, moduleId: number): Promise<{ progressPercentage: number; isCompleted: boolean } | undefined> {
   // Get module content to calculate total lessons/quizzes
   const module = await getModuleById(moduleId);
   if (!module) return;
@@ -135,38 +223,43 @@ export async function updateModuleProgress(userId: number, moduleId: number) {
   const totalLessons = module.content.lessons?.length || 0;
   const totalQuizzes = module.content.quizzes?.length || 0;
 
+  // Avoid division by zero
+  if (totalLessons + totalQuizzes === 0) {
+    return { progressPercentage: 100, isCompleted: true };
+  }
+
   // Get completed lessons and quizzes
   const completedLessonsResult = await query(
-    `SELECT COUNT(*) as count FROM lesson_progress 
+      `SELECT COUNT(*) as count FROM lesson_progress 
      WHERE user_id = $1 AND module_id = $2 AND completed = true AND quiz_score IS NULL`,
-    [userId, moduleId]
+      [userId, moduleId]
   );
 
   const completedQuizzesResult = await query(
-    `SELECT COUNT(*) as count FROM lesson_progress 
+      `SELECT COUNT(*) as count FROM lesson_progress 
      WHERE user_id = $1 AND module_id = $2 AND completed = true AND quiz_score IS NOT NULL`,
-    [userId, moduleId]
+      [userId, moduleId]
   );
 
   const totalTimeResult = await query(
-    `SELECT COALESCE(SUM(time_spent), 0) as total FROM lesson_progress 
+      `SELECT COALESCE(SUM(time_spent), 0) as total FROM lesson_progress 
      WHERE user_id = $1 AND module_id = $2`,
-    [userId, moduleId]
+      [userId, moduleId]
   );
 
-  const completedLessons = parseInt(completedLessonsResult.rows[0].count);
-  const completedQuizzes = parseInt(completedQuizzesResult.rows[0].count);
-  const totalTimeSpent = parseInt(totalTimeResult.rows[0].total);
+  const completedLessons = parseInt(String(completedLessonsResult.rows[0].count));
+  const completedQuizzes = parseInt(String(completedQuizzesResult.rows[0].count));
+  const totalTimeSpent = parseInt(String(totalTimeResult.rows[0].total));
 
   const progressPercentage = Math.round(
-    ((completedLessons + completedQuizzes) / (totalLessons + totalQuizzes)) * 100
+      ((completedLessons + completedQuizzes) / (totalLessons + totalQuizzes)) * 100
   );
 
   const isCompleted = progressPercentage === 100;
 
   // Update module progress
   await query(
-    `INSERT INTO user_progress (user_id, module_id, progress_percentage, completed, completion_date, total_time_spent, last_accessed)
+      `INSERT INTO user_progress (user_id, module_id, progress_percentage, completed, completion_date, total_time_spent, last_accessed)
      VALUES ($1, $2, $3, $4, $5, $6, NOW())
      ON CONFLICT (user_id, module_id) 
      DO UPDATE SET
@@ -175,47 +268,50 @@ export async function updateModuleProgress(userId: number, moduleId: number) {
        completion_date = CASE WHEN EXCLUDED.completed = true AND user_progress.completed = false THEN NOW() ELSE user_progress.completion_date END,
        total_time_spent = EXCLUDED.total_time_spent,
        last_accessed = NOW()`,
-    [userId, moduleId, progressPercentage, isCompleted, isCompleted ? new Date().toISOString() : null, totalTimeSpent]
+      [userId, moduleId, progressPercentage, isCompleted, isCompleted ? new Date().toISOString() : null, totalTimeSpent]
   );
 
   return { progressPercentage, isCompleted };
 }
 
-export async function getLessonProgress(userId: number, moduleId: number, lessonId: string) {
+export async function getLessonProgress(userId: number, moduleId: number, lessonId: string): Promise<LessonProgress | null> {
   const result = await query(
-    'SELECT * FROM lesson_progress WHERE user_id = $1 AND module_id = $2 AND lesson_id = $3',
-    [userId, moduleId, lessonId]
+      'SELECT * FROM lesson_progress WHERE user_id = $1 AND module_id = $2 AND lesson_id = $3',
+      [userId, moduleId, lessonId]
   );
-  
-  return result.rows.length > 0 ? result.rows[0] : null;
+
+  return result.rows.length > 0 ? (result.rows[0] as LessonProgress) : null;
 }
 
-export async function getModuleProgressDetailed(userId: number, moduleId: number) {
+export async function getModuleProgressDetailed(userId: number, moduleId: number): Promise<{
+  moduleProgress: UserProgress | null;
+  lessonProgress: LessonProgress[];
+}> {
   const moduleProgress = await getUserProgress(userId, moduleId);
   const lessonProgressResult = await query(
-    'SELECT * FROM lesson_progress WHERE user_id = $1 AND module_id = $2',
-    [userId, moduleId]
+      'SELECT * FROM lesson_progress WHERE user_id = $1 AND module_id = $2',
+      [userId, moduleId]
   );
 
   return {
     moduleProgress,
-    lessonProgress: lessonProgressResult.rows
+    lessonProgress: lessonProgressResult.rows as LessonProgress[]
   };
 }
 
-export async function getAllUserProgress(userId: number) {
+export async function getAllUserProgress(userId: number): Promise<UserProgress[]> {
   const result = await query('SELECT * FROM user_progress WHERE user_id = $1', [userId]);
-  return result.rows;
+  return result.rows as UserProgress[];
 }
 
-export async function getAllLessonProgress(userId: number) {
+export async function getAllLessonProgress(userId: number): Promise<LessonProgress[]> {
   const result = await query('SELECT * FROM lesson_progress WHERE user_id = $1', [userId]);
-  return result.rows;
+  return result.rows as LessonProgress[];
 }
 
-export async function getAllUserCertificates(userId: number) {
+export async function getAllUserCertificates(userId: number): Promise<Certificate[]> {
   const result = await query('SELECT * FROM certificates WHERE user_id = $1', [userId]);
-  return result.rows;
+  return result.rows as Certificate[];
 }
 
 // Certificate functions
@@ -228,12 +324,12 @@ export async function generateCertificate(userId: number, moduleId: number): Pro
 
   // Check if certificate already exists
   const existingCertResult = await query(
-    'SELECT certificate_code FROM certificates WHERE user_id = $1 AND module_id = $2',
-    [userId, moduleId]
+      'SELECT certificate_code FROM certificates WHERE user_id = $1 AND module_id = $2',
+      [userId, moduleId]
   );
 
   if (existingCertResult.rows.length > 0) {
-    return existingCertResult.rows[0].certificate_code;
+    return existingCertResult.rows[0].certificate_code as string;
   }
 
   // Generate unique certificate code
@@ -246,44 +342,44 @@ export async function generateCertificate(userId: number, moduleId: number): Pro
   const module = await getModuleById(moduleId);
 
   const certificateData = {
-    user: userResult.rows[0]?.username,
+    user: userResult.rows[0]?.username as string,
     module: module?.title,
     completionDate: progress.completion_date,
     timeSpent: progress.total_time_spent,
   };
 
-  // Save certificate to database
+  // Save certificate to migration
   await query(
-    'INSERT INTO certificates (user_id, module_id, certificate_code, certificate_data) VALUES ($1, $2, $3, $4)',
-    [userId, moduleId, certificateCode, JSON.stringify(certificateData)]
+      'INSERT INTO certificates (user_id, module_id, certificate_code, certificate_data) VALUES ($1, $2, $3, $4)',
+      [userId, moduleId, certificateCode, JSON.stringify(certificateData)]
   );
 
   return certificateCode;
 }
 
-export async function getCertificate(userId: number, moduleId: number) {
+export async function getCertificate(userId: number, moduleId: number): Promise<Certificate | null> {
   const result = await query(
-    'SELECT * FROM certificates WHERE user_id = $1 AND module_id = $2',
-    [userId, moduleId]
+      'SELECT * FROM certificates WHERE user_id = $1 AND module_id = $2',
+      [userId, moduleId]
   );
-  
-  return result.rows.length > 0 ? result.rows[0] : null;
+
+  return result.rows.length > 0 ? (result.rows[0] as Certificate) : null;
 }
 
-export async function verifyCertificate(certificateCode: string) {
+export async function verifyCertificate(certificateCode: string): Promise<(Certificate & { username: string; module_title: string }) | null> {
   const result = await query(
-    `SELECT c.*, u.username, m.title as module_title 
+      `SELECT c.*, u.username, m.title as module_title 
      FROM certificates c
      JOIN users u ON c.user_id = u.id
      JOIN modules m ON c.module_id = m.id
      WHERE c.certificate_code = $1 AND c.verified = true`,
-    [certificateCode]
+      [certificateCode]
   );
-  
-  return result.rows.length > 0 ? result.rows[0] : null;
+
+  return result.rows.length > 0 ? (result.rows[0] as Certificate & { username: string; module_title: string }) : null;
 }
 
-export async function resetModuleProgress(userId: number, moduleId: number) {
+export async function resetModuleProgress(userId: number, moduleId: number): Promise<void> {
   // Delete all lesson progress for this user/module
   await query('DELETE FROM lesson_progress WHERE user_id = $1 AND module_id = $2', [userId, moduleId]);
 
@@ -294,14 +390,14 @@ export async function resetModuleProgress(userId: number, moduleId: number) {
   await query('DELETE FROM certificates WHERE user_id = $1 AND module_id = $2', [userId, moduleId]);
 }
 
-// Auth functions (for completeness)
+// Auth functions - using password_hash consistently
 export async function registerUser(username: string, email: string, password: string): Promise<{ user: User; token: string }> {
   // Check if user already exists
   const existingUserResult = await query(
-    'SELECT id FROM users WHERE email = $1 OR username = $2',
-    [email, username]
+      'SELECT id FROM users WHERE email = $1 OR username = $2',
+      [email, username]
   );
-  
+
   if (existingUserResult.rows.length > 0) {
     throw new Error('User already exists with this email or username');
   }
@@ -311,11 +407,11 @@ export async function registerUser(username: string, email: string, password: st
 
   // Insert user
   const result = await query(
-    'INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING id, username, email, role, created_at',
-    [username, email, hashedPassword]
+      'INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING id, username, email, role, created_at',
+      [username, email, hashedPassword]
   );
 
-  const user = result.rows[0];
+  const user = result.rows[0] as User;
 
   // Generate JWT token
   const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
@@ -325,16 +421,19 @@ export async function registerUser(username: string, email: string, password: st
 
 export async function loginUser(email: string, password: string): Promise<{ user: User; token: string }> {
   // Get user by email
-  const userResult = await query('SELECT * FROM users WHERE email = $1', [email]);
-  
+  const userResult = await query(
+      'SELECT id, username, email, password_hash, role, created_at FROM users WHERE email = $1',
+      [email]
+  );
+
   if (userResult.rows.length === 0) {
     throw new Error('Invalid email or password');
   }
 
-  const user = userResult.rows[0];
+  const user = userResult.rows[0] as UserRow;
 
   // Verify password
-  const isValidPassword = await bcrypt.compare(password, user.password);
+  const isValidPassword = await bcrypt.compare(password, user.password_hash);
   if (!isValidPassword) {
     throw new Error('Invalid email or password');
   }
@@ -342,9 +441,9 @@ export async function loginUser(email: string, password: string): Promise<{ user
   // Generate JWT token
   const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
 
-  // Return user without password
+  // Return user without password_hash
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { password: _, ...userWithoutPassword } = user;
+  const { password_hash: _, ...userWithoutPassword } = user;
   return { user: userWithoutPassword as User, token };
 }
 
@@ -359,5 +458,5 @@ export function verifyToken(token: string): { userId: number; email: string } {
 
 export async function getUserById(id: number): Promise<User | null> {
   const result = await query('SELECT id, username, email, role, created_at FROM users WHERE id = $1', [id]);
-  return result.rows.length > 0 ? result.rows[0] : null;
+  return result.rows.length > 0 ? (result.rows[0] as User) : null;
 }

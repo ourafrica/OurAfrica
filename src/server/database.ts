@@ -10,14 +10,14 @@ db.pragma('foreign_keys = ON');
 export function initializeDatabase() {
     // Users table
     db.exec(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT UNIQUE NOT NULL,
-      email TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL,
-      role TEXT DEFAULT 'student',
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(255) UNIQUE NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,  -- FIXED
+        role VARCHAR(50) DEFAULT 'user',  -- Also match the role default
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
   `);
 
     // Modules table

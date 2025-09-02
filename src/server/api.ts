@@ -22,7 +22,7 @@ interface UserRow {
   id: number;
   username: string;
   email: string;
-  password: string;
+  password_hash: string;
   role?: string;
   created_at: string;
 }
@@ -122,7 +122,7 @@ export async function registerUser(
 
   // Insert user
   const result = await sql`
-    INSERT INTO users (username, email, password)
+    INSERT INTO users (username, email, password_hash)
     VALUES (${username}, ${email}, ${hashedPassword})
     RETURNING id, username, email, role, created_at
   ` as User[];
@@ -151,7 +151,7 @@ export async function loginUser(
   const userWithPassword = result[0];
 
   // Verify password
-  const isValidPassword = await bcrypt.compare(password, userWithPassword.password);
+  const isValidPassword = await bcrypt.compare(password, userWithPassword.password_hash);
   if (!isValidPassword) {
     throw new Error("Invalid email or password");
   }
