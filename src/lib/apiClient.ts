@@ -205,7 +205,23 @@ class ApiClient {
 
   // Module methods
   async getModules(): Promise<ApiResponse<Module[]>> {
-    return this.makeRequest<Module[]>('/api/modules');
+    console.log('🔍 getModules() called');
+    console.log('🔍 isLocal:', this.isLocal);
+    console.log('🔍 baseUrl:', this.baseUrl);
+    console.log('🔍 Full URL will be:', `${this.baseUrl}/api/modules`);
+
+    const result = await this.makeRequest<Module[]>('/api/modules');
+
+    console.log('📦 getModules result:', result);
+    console.log('📊 getModules success:', result.success);
+    if (result.success) {
+      console.log('📊 getModules data:', result.data);
+      console.log('📊 getModules data length:', result.data?.length);
+    } else {
+      console.log('❌ getModules error:', result.error);
+    }
+
+    return result;
   }
 
   async getModule(id: number): Promise<ApiResponse<Module>> {

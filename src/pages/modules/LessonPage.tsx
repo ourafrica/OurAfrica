@@ -46,7 +46,7 @@ const LessonPage: React.FC = () => {
       ); // seconds
 
       try {
-        const { getAuthHeaders } = useAuth.getState();
+        // const auth = useAuth.getState();
         await updateLessonProgress(
           user.id,
           currentModule.id,
@@ -55,7 +55,6 @@ const LessonPage: React.FC = () => {
             completed: true,
             timeSpent,
           },
-          getAuthHeaders()
         );
       } catch (error) {
         console.error("Failed to save lesson progress:", error);
@@ -72,7 +71,7 @@ const LessonPage: React.FC = () => {
       ); // seconds
 
       try {
-        const { getAuthHeaders } = useAuth.getState();
+        // const { getAuthHeaders } = useAuth.getState();
 
         // Save progress with completed = true and wait for backend response
         await updateLessonProgress(
@@ -83,7 +82,6 @@ const LessonPage: React.FC = () => {
             completed: true,
             timeSpent,
           },
-          getAuthHeaders()
         );
 
         // No artificial delay - updateLessonProgress already reloads progress

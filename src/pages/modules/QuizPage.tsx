@@ -111,13 +111,12 @@ const QuizPage: React.FC = () => {
     // Save quiz score
     if (user) {
       try {
-        const { getAuthHeaders } = useAuth.getState();
+        // const { getAuthHeaders } = useAuth.getState();
         await saveQuizScore(
           user.id,
           parseInt(moduleId),
           quizId,
           calculatedScore,
-          getAuthHeaders()
         );
 
         // No artificial delay - saveQuizScore already reloads progress via updateLessonProgress

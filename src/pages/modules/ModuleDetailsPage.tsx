@@ -31,8 +31,8 @@ const ModuleDetailsPage: React.FC = () => {
 
     // Load progress data when user is available
     if (user) {
-      const { getAuthHeaders } = useAuth.getState();
-      loadProgress(user.id, getAuthHeaders());
+      // const {  } = useAuth.getState();
+      loadProgress(user.id);
     }
   }, [moduleId, user, loadModuleById, loadProgress]);
 

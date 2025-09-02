@@ -27,26 +27,92 @@ interface UserRow {
   created_at: string;
 }
 
-// Module functions
+// Helper function to safely parse JSON or return the value if already parsed
+function safeJsonParse<T>(value: unknown, fallback: T): T {
+  console.log('🔍 safeJsonParse input:', typeof value, value);
+
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      // console.log('✅ Successfully parsed JSON:', parsed);
+      return parsed;
+    } catch (error) {
+      // console.error('❌ JSON parse error:', error);
+      // console.log('🔄 Using fallback:', fallback);
+      return fallback;
+    }
+  }
+
+  // console.log('📋 Value already parsed, returning as-is:', value);
+  return value as T;
+}
+
+// Module functions with comprehensive logging
 export async function getModules(): Promise<Module[]> {
+  console.log('🚀 getModules called');
+
   const result = await sql`SELECT * FROM modules ORDER BY created_at DESC` as ModuleRow[];
-  return result.map((module) => ({
-    ...module,
-    content: JSON.parse(module.content),
-    tags: JSON.parse(module.tags || '[]')
-  }));
+  // console.log('📦 Raw database result:', result);
+  // console.log('📊 Number of modules from DB:', result.length);
+
+  // if (result.length > 0) {
+  //   console.log('🔍 First module raw data:', result[0]);
+  //   console.log('🔍 First module content field:', result[0].content);
+  //   console.log('🔍 First module content type:', typeof result[0].content);
+  // }
+
+  const processedModules = result.map((module, index) => {
+    // console.log(`🔄 Processing module ${index + 1}:`, module.title);
+    // console.log(`📝 Raw content for ${module.title}:`, module.content);
+    // console.log(`🏷️ Raw tags for ${module.title}:`, module.tags);
+
+    const processedContent = safeJsonParse(module.content, { lessons: [], quizzes: [], estimatedTime: 0 });
+    const processedTags = safeJsonParse(module.tags, []);
+
+    // console.log(`✅ Processed content for ${module.title}:`, processedContent);
+    // console.log(`✅ Processed tags for ${module.title}:`, processedTags);
+
+    const finalModule = {
+      ...module,
+      content: processedContent,
+      tags: processedTags
+    };
+
+    // console.log(`🎯 Final module object for ${module.title}:`, finalModule);
+    return finalModule;
+  });
+
+  // console.log('🏁 Final processed modules array:', processedModules);
+  return processedModules;
 }
 
 export async function getModuleById(id: number): Promise<Module | null> {
+  // console.log('🚀 getModuleById called with id:', id);
+
   const result = await sql`SELECT * FROM modules WHERE id = ${id}` as ModuleRow[];
-  if (result.length === 0) return null;
+  // console.log('📦 Raw database result for module:', result);
+
+  if (result.length === 0) {
+    // console.log('❌ No module found with id:', id);
+    return null;
+  }
 
   const module = result[0];
-  return {
+  // console.log('🔍 Raw module data:', module);
+  // console.log('🔍 Raw content field:', module.content);
+  // console.log('🔍 Content type:', typeof module.content);
+
+  const processedContent = safeJsonParse(module.content, { lessons: [], quizzes: [], estimatedTime: 0 });
+  const processedTags = safeJsonParse(module.tags, []);
+
+  const finalModule = {
     ...module,
-    content: JSON.parse(module.content),
-    tags: JSON.parse(module.tags || '[]')
+    content: processedContent,
+    tags: processedTags
   };
+
+  console.log('🎯 Final processed module:', finalModule);
+  return finalModule;
 }
 
 export async function getUserProgress(
