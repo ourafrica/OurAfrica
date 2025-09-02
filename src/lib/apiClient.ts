@@ -57,8 +57,8 @@ class ApiClient {
 
   constructor() {
     this.isLocal = this.detectLocalEnvironment();
-    this.baseUrl = this.isLocal ? 'http://localhost:3001' : '';
-    
+    this.baseUrl = this.isLocal ? 'http://localhost:3001' : 'https://our-africa-one.vercel.app';
+
     console.log(`🔧 API Client initialized for ${this.isLocal ? 'OFFLINE MODE' : 'ONLINE MODE'}`);
   }
 
